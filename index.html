@@ -373,7 +373,7 @@ function renderWWDaily(bldg){
       </div>
     </div>
     <div class="stats-grid">
-      ${[["น้ำประปา",tW.toFixed(0),"ลบ.ม."],["น้ำเสีย (×0.8)",tWaste.toFixed(1),"ลบ.ม."],["Flowmeter",tFlow.toFixed(1),"ลบ.ม."],["น้ำทิ้ง",tOut.toFixed(1),"ลบ.ม."],["ไฟฟ้า",tElec.toFixed(0),"kW"],["ค่าไฟ",tCost.toFixed(2),"บาท"],["คลอรีน",tCl.toFixed(1),"ลิตร"],["ค่าคลอรีน",tClCost.toFixed(2),"บาท"]].map(([l,v,u])=>`<div class="stat-card"><div class="stat-lbl">${l}</div><div class="stat-val" style="font-size:17px">${v}</div><div style="font-size:11px;color:var(--gray3)">${u}</div></div>`).join("")}
+      ${[["น้ำประปา",tW.toFixed(0),"ลบ.ม."],["น้ำเสียเข้าระบบ",tWaste.toFixed(1),"ลบ.ม."],["น้ำเสีย (Flowmeter)",tFlow.toFixed(1),"ลบ.ม."],["น้ำทิ้ง",tOut.toFixed(1),"ลบ.ม."],["ไฟฟ้า",tElec.toFixed(0),"kW"],["ค่าไฟฟ้า",tCost.toFixed(2),"บาท"],["คลอรีน",tCl.toFixed(1),"ลิตร"],["ค่าคลอรีน",tClCost.toFixed(2),"บาท"]].map(([l,v,u])=>`<div class="stat-card"><div class="stat-lbl">${l}</div><div class="stat-val" style="font-size:17px">${v}</div><div style="font-size:11px;color:var(--gray3)">${u}</div></div>`).join("")}
     </div>
 
     <!-- กราฟ -->
@@ -510,17 +510,17 @@ function renderWWParam(bldg){
 
 // ── WW ANALYSIS ────────────────────────────────────────────────
 const WW_ANALYSIS_PARAMS = [
-  {id:"ph",       label:"pH",                    unit:""},
-  {id:"bod",      label:"BOD",                   unit:"mg/L"},
-  {id:"cod",      label:"COD",                   unit:"mg/L"},
-  {id:"ss",       label:"SS",                    unit:"mg/L"},
-  {id:"tds",      label:"TDS",                   unit:"mg/L"},
-  {id:"tkn",      label:"TKN",                   unit:"mg/L"},
-  {id:"sulfide",  label:"Sulfide",               unit:"mg/L"},
-  {id:"oil",      label:"น้ำมันและไขมัน",        unit:"mg/L"},
-  {id:"cl_free",  label:"คลอรีนอิสระ",           unit:"mg/L"},
-  {id:"t_coli",   label:"Total Coliform",        unit:""},
-  {id:"f_coli",   label:"Fecal Coliform",        unit:""},
+  {id:"ph",       label:"ค่าความเป็นกรด-ด่าง (pH)",    unit:"",           std:"5.5 - 9.0"},
+  {id:"bod",      label:"บีโอดี (BOD)",                 unit:"mg/L",       std:"ไม่เกิน 20"},
+  {id:"cod",      label:"ซีโอดี (COD)",                 unit:"mg/L",       std:"-"},
+  {id:"ss",       label:"สารแขวนลอยทั้งหมด (TSS)",     unit:"mg/L",       std:"ไม่เกิน 30"},
+  {id:"tds",      label:"ของแข็งละลายน้ำทั้งหมด (TDS)",unit:"mg/L",       std:"ไม่เกิน 1,000"},
+  {id:"tkn",      label:"ทีเคเอ็น (TKN)",              unit:"mg/L",       std:"ไม่เกิน 35"},
+  {id:"sulfide",  label:"ซัลไฟด์ (Sulfide)",           unit:"mg/L",       std:"ไม่เกิน 1.0"},
+  {id:"oil",      label:"น้ำมันและไขมัน (Oil & Grease)",unit:"mg/L",      std:"ไม่เกิน 20"},
+  {id:"cl_free",  label:"คลอรีนอิสระ (Free Chlorine)", unit:"mg/L",       std:"ไม่เกิน 1.0"},
+  {id:"t_coli",   label:"Coliforms",                   unit:"MPN/100 mL", std:"-"},
+  {id:"f_coli",   label:"Fecal Coliforms",             unit:"MPN/100 mL", std:"-"},
 ];
 
 function renderWWAnalysis(bldg){
@@ -560,13 +560,17 @@ function renderWWAnalysis(bldg){
       <table class="table" style="margin-bottom:16px">
         <thead>
           <tr>
-            <th style="text-align:left;min-width:160px">พารามิเตอร์</th>
-            <th style="min-width:120px">ผลการวิเคราะห์</th>
+            <th style="text-align:left;min-width:200px">พารามิเตอร์</th>
+            <th style="min-width:100px">หน่วย</th>
+            <th style="min-width:130px">มาตรฐาน</th>
+            <th style="min-width:130px">ผลการวิเคราะห์</th>
           </tr>
         </thead>
         <tbody>
           ${WW_ANALYSIS_PARAMS.map(p=>`<tr>
-            <td style="text-align:left;font-weight:500">${p.label}${p.unit?" ("+p.unit+")":""}</td>
+            <td style="text-align:left;font-weight:500">${p.label}</td>
+            <td style="color:var(--gray4)">${p.unit||"-"}</td>
+            <td style="color:var(--amber);font-size:12px">${p.std||"-"}</td>
             <td>${inp(p.id,110,p.id==="t_coli"||p.id==="f_coli"?"text":"number")}</td>
           </tr>`).join("")}
         </tbody>
@@ -619,6 +623,41 @@ function renderWWSummary(bldg){
           }).join("")}
         </tbody>
       </table>
+    </div>
+
+    <!-- ตารางสรุปผลวิเคราะห์น้ำเสีย -->
+    <div style="margin-top:28px">
+      <h3 style="font-size:16px;font-weight:600;margin-bottom:14px;color:var(--gray5)">ผลการวิเคราะห์น้ำ</h3>
+      <div style="overflow-x:auto">
+        <table class="table">
+          <thead>
+            <tr>
+              <th style="text-align:left;min-width:200px">พารามิเตอร์</th>
+              <th style="min-width:80px">หน่วย</th>
+              <th style="min-width:130px">มาตรฐาน</th>
+              ${MN.map((mn2,i)=>"<th style='min-width:90px'>"+MS[i]+"</th>").join("")}
+            </tr>
+          </thead>
+          <tbody>
+            ${WW_ANALYSIS_PARAMS.map(p=>{
+              return "<tr><td style='text-align:left;font-weight:500;font-size:12px'>"+p.label+"</td><td style='color:var(--gray4);font-size:12px'>"+(p.unit||"-")+"</td><td style='color:var(--amber);font-size:12px'>"+(p.std||"-")+"</td>"+
+              MN.map((_,mi)=>{
+                const aRec=S.data["ww_analysis_"+bldg+"_"+y+"_"+mi]||{};
+                const val=aRec[p.id];
+                return "<td style='font-size:12px;"+(val?"color:var(--gray5)":"color:var(--gray3)")+"'>"+(val||"-")+"</td>";
+              }).join("")+"</tr>";
+            }).join("")}
+            <tr style="background:var(--gray0)">
+              <td style="text-align:left;font-weight:600;font-size:12px" colspan="3">วันที่ส่งตัวอย่าง</td>
+              ${MN.map((_,mi)=>{const r2=S.data["ww_analysis_"+bldg+"_"+y+"_"+mi]||{};return "<td style='font-size:11px;color:var(--gray4)'>"+(r2.send_date||"-")+"</td>";}).join("")}
+            </tr>
+            <tr style="background:var(--gray0)">
+              <td style="text-align:left;font-weight:600;font-size:12px" colspan="3">ไฟล์ผลตรวจ</td>
+              ${MN.map((_,mi)=>{const r2=S.data["ww_analysis_"+bldg+"_"+y+"_"+mi]||{};return "<td>"+(r2.pdf_link?"<a href='"+r2.pdf_link+"' target='_blank' style='font-size:11px;color:var(--blue)'>📄 เปิด</a>":"-")+"</td>";}).join("")}
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>`;
 }
@@ -1153,8 +1192,14 @@ async function preload(page){
     const y2=S.wwAnalysisYear??S.selYear;
     ids.push(`ww_analysis_sth_${y2}_${m2}`);
   }
-  else if(page==="ww-research-summary") for(let i=0;i<12;i++)ids.push(`ww_research_${y}_${i}`);
-  else if(page==="ww-sth-summary") for(let i=0;i<12;i++)ids.push(`ww_sth_${y}_${i}`);
+  else if(page==="ww-research-summary"){
+    for(let i=0;i<12;i++)ids.push(`ww_research_${y}_${i}`);
+    for(let i=0;i<12;i++)ids.push(`ww_analysis_research_${y}_${i}`);
+  }
+  else if(page==="ww-sth-summary"){
+    for(let i=0;i<12;i++)ids.push(`ww_sth_${y}_${i}`);
+    for(let i=0;i<12;i++)ids.push(`ww_analysis_sth_${y}_${i}`);
+  }
   else if(page==="water-usage") ids.push(`water_usage_${y}_${m}`);
   else if(page==="chlorine-start") ids.push(`chlorine_start_${y}_${m}`);
   else if(page==="chlorine-end") ids.push(`chlorine_end_${y}_${m}`);
