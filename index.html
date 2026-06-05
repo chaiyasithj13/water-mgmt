@@ -255,7 +255,6 @@ function renderSidebar(){
       ${ni("water-usage","ปริมาณการใช้น้ำประปา",ico.water)}
       ${ni("chlorine-start","คลอรีน (ต้นทาง) รายวัน",ico.param)}
       ${ni("chlorine-end","คลอรีน (ปลายทาง) รายสัปดาห์",ico.param)}
-      ${ni("water-quality","ค่า pH และ TDS น้ำประปา",ico.param)}
       ${ni("water-analysis","ผลการตรวจวิเคราะห์น้ำ",ico.lab)}
       ${isAdmin?ns("ผู้ดูแลระบบ"):""}
       ${isAdmin?ni("manage-users","จัดการผู้ใช้",ico.user):""}
@@ -285,7 +284,6 @@ function renderPage(){
     case"water-usage": return renderWaterUsage();
     case"chlorine-start": return renderChlorineStart();
     case"chlorine-end": return renderChlorineEnd();
-    case"water-quality": return renderWaterQuality();
     case"water-analysis": return renderWaterAnalysis();
     case"manage-users": return renderManageUsers();
     default: return "<p>ไม่พบหน้า</p>";
@@ -707,7 +705,7 @@ function renderChlorineStart(){
     ${tot>0?`<div class="alert ${ok/tot>=0.9?"alert-success":"alert-warn"}" style="margin-bottom:14px">คลอรีนผ่านเกณฑ์ ${ok}/${tot} วัน (${Math.round(ok/tot*100)}%)</div>`:""}
     <div style="overflow-x:auto">
       <table class="table">
-        <thead><tr><th>วันที่</th><th>เวลา</th><th>คลอรีนอิสระ (มก./ล)</th><th>TDS (มก./ล)</th><th>หมายเหตุ</th><th>ผู้ตรวจ</th></tr></thead>
+        <thead><tr><th>วันที่</th><th>เวลา</th><th>คลอรีนอิสระ (มก./ล)</th><th>TDS (มก./ล)</th><th>pH</th><th>หมายเหตุ</th><th>ผู้ตรวจ</th></tr></thead>
         <tbody>
           ${Array.from({length:days},(_,i)=>i+1).map(d=>{
             const r=rows[d]||{};
@@ -717,7 +715,9 @@ function renderChlorineStart(){
               <td>${inp(d,"time",70,"text")}</td>
               <td>${isAdmin?inp(d,"free_chlorine",85):`<span class="${!isNaN(cl)&&cl>0?(cl>=0.2?"badge-ok":"badge-bad"):""}">${r.free_chlorine??"-"}</span>`}</td>
               <td>${isAdmin?inp(d,"tds",85):`<span class="${!isNaN(tds)&&tds>0?(tds<=500?"badge-ok":"badge-bad"):""}">${r.tds??"-"}</span>`}</td>
-              <td>${inp(d,"note",130,"text")}</td><td>${inp(d,"inspector",90,"text")}</td>
+              <td>${inp(d,"ph",70)}</td>
+              <td>${inp(d,"note",130,"text")}</td>
+              <td>${isAdmin?`<select class="tbl-input" style="width:115px" onchange="updateField('${docId}',${d},'inspector',this.value)"><option value="ธรรมนูญ" ${rows[d]?.inspector==="ธรรมนูญ"?" selected":""}>ธรรมนูญ</option><option value="วีระยุทธ" ${rows[d]?.inspector==="วีระยุทธ"?" selected":""}>วีระยุทธ</option><option value="สิทธิชัย" ${rows[d]?.inspector==="สิทธิชัย"?" selected":""}>สิทธิชัย</option><option value="ณัฐพัฒน์" ${rows[d]?.inspector==="ณัฐพัฒน์"?" selected":""}>ณัฐพัฒน์</option><option value="กรอกข้อมูลเอง" ${rows[d]?.inspector==="กรอกข้อมูลเอง"?" selected":""}>กรอกข้อมูลเอง</option></select>`:`<span>${rows[d]?.inspector??"-"}</span>`}</td>
             </tr>`;
           }).join("")}
         </tbody>
@@ -743,7 +743,7 @@ function renderChlorineEnd(){
         </div>
         <div style="overflow-x:auto">
           <table class="table">
-            <thead><tr><th>อาคาร</th><th>จุดเก็บ</th><th>สารเคมี(L/hr)</th><th>ClO₂(มก./ล)</th><th>คลอรีนอิสระ</th><th>TDS(มก./ล)</th></tr></thead>
+            <thead><tr><th>อาคาร</th><th>จุดเก็บ</th><th>สารเคมี(L/hr)</th><th>ClO₂(มก./ล)</th><th>คลอรีนอิสระ</th><th>TDS(มก./ล)</th><th>pH</th><th>ผู้ตรวจ</th></tr></thead>
             <tbody>
               ${BLDG_END.map(b=>{
                 const r=data[w]?.[b]||{};
@@ -756,6 +756,8 @@ function renderChlorineEnd(){
                   <td>${inp2("chemical")}</td><td>${inp2("clo2")}</td>
                   <td>${isAdmin?inp2("free_chlorine",85):`<span class="${clClass}">${r.free_chlorine??"-"}</span>`}</td>
                   <td>${inp2("tds")}</td>
+                  <td>${inp2("ph",70)}</td>
+                  <td>${isAdmin?`<select class="tbl-input" style="width:115px" onchange="updateEndRow('${docId}',${w},'${b}','inspector',this.value)"><option value="ธรรมนูญ" ${data[w]?.[b]?.inspector==="ธรรมนูญ"?" selected":""}>ธรรมนูญ</option><option value="วีระยุทธ" ${data[w]?.[b]?.inspector==="วีระยุทธ"?" selected":""}>วีระยุทธ</option><option value="สิทธิชัย" ${data[w]?.[b]?.inspector==="สิทธิชัย"?" selected":""}>สิทธิชัย</option><option value="ณัฐพัฒน์" ${data[w]?.[b]?.inspector==="ณัฐพัฒน์"?" selected":""}>ณัฐพัฒน์</option><option value="กรอกข้อมูลเอง" ${data[w]?.[b]?.inspector==="กรอกข้อมูลเอง"?" selected":""}>กรอกข้อมูลเอง</option></select>`:`<span>${data[w]?.[b]?.inspector??"-"}</span>`}</td>
                 </tr>`;
               }).join("")}
             </tbody>
@@ -792,39 +794,142 @@ function renderWaterQuality(){
   </div>`;
 }
 
-// ── WATER ANALYSIS ────────────────────────────────────────────
+// ── WATER ANALYSIS ────────────────────────────────────────────────────────────
+const WATER_ANALYSIS_TYPES = {
+  "tap": {
+    label: "น้ำประปา (ทุก 6 เดือน)",
+    freq: "6 เดือน",
+    params: [
+      {id:"ph",label:"ความเป็นกรด-ด่าง (pH)",unit:"",std:"6.5-8.5"},
+      {id:"ts",label:"ปริมาณวลสารทั้งหมด (TS)",unit:"mg/L",std:"ไม่เกิน 500"},
+      {id:"color",label:"สี",unit:"HZ",std:"ไม่เกิน 20"},
+      {id:"turbidity",label:"ความขุ่น",unit:"FAU",std:"ไม่เกิน 5"},
+      {id:"hardness",label:"ความกระด้าง (as CaCO₃)",unit:"mg/L",std:"ไม่เกิน 100"},
+      {id:"sulfate",label:"ซัลเฟต",unit:"mg/L",std:"ไม่เกิน 250"},
+      {id:"chloride",label:"คลอไรด์",unit:"mg/L",std:"ไม่เกิน 250"},
+      {id:"nitrate",label:"ไนตรต (คำนวณเป็นไนโตรเจน)",unit:"mg/L",std:"ไม่เกิน 4.0"},
+      {id:"iron",label:"เหล็ก",unit:"mg/L",std:"ไม่เกิน 0.3"},
+      {id:"toxins",label:"สารพิษอื่นๆ เช่น สารหนู สารตะกั่ว",unit:"mg/L",std:"ไม่เกิน 0.05"},
+      {id:"fluoride",label:"ฟลูออไรด์",unit:"mg/L",std:"ไม่เกิน 0.70"},
+      {id:"coliforms",label:"Coliforms",unit:"MPN/100 mL",std:"น้อยกว่า 2.2"},
+      {id:"ecoli",label:"Escherichia coli",unit:"/100 mL",std:"ไม่พบ"},
+      {id:"salmonella",label:"Salmonella sp.",unit:"/100 mL",std:"ไม่พบ"},
+      {id:"staph",label:"Staphylococcus aureus",unit:"CFU/100 mL",std:"น้อยกว่า 100"},
+    ]
+  },
+  "ro": {
+    label: "น้ำดื่ม RO (ทุก 3 เดือน)",
+    freq: "3 เดือน",
+    params: [
+      {id:"ph",label:"ความเป็นกรด-ด่าง (pH)",unit:"",std:"6.5-8.5"},
+      {id:"ts",label:"ปริมาณวลสารทั้งหมด (TS)",unit:"mg/L",std:"ไม่เกิน 500"},
+      {id:"color",label:"สี",unit:"HZ",std:"ไม่เกิน 20"},
+      {id:"turbidity",label:"ความขุ่น",unit:"FAU",std:"ไม่เกิน 5"},
+      {id:"hardness",label:"ความกระด้าง (as CaCO₃)",unit:"mg/L",std:"ไม่เกิน 100"},
+      {id:"sulfate",label:"ซัลเฟต",unit:"mg/L",std:"ไม่เกิน 250"},
+      {id:"chloride",label:"คลอไรด์",unit:"mg/L",std:"ไม่เกิน 250"},
+      {id:"nitrate",label:"ไนตรต (คำนวณเป็นไนโตรเจน)",unit:"mg/L",std:"ไม่เกิน 4.0"},
+      {id:"iron",label:"เหล็ก",unit:"mg/L",std:"ไม่เกิน 0.3"},
+      {id:"toxins",label:"สารพิษอื่นๆ เช่น สารหนู สารตะกั่ว",unit:"mg/L",std:"ไม่เกิน 0.05"},
+      {id:"fluoride",label:"ฟลูออไรด์",unit:"mg/L",std:"ไม่เกิน 0.70"},
+      {id:"coliforms",label:"Coliforms",unit:"MPN/100 mL",std:"น้อยกว่า 2.2"},
+      {id:"ecoli",label:"Escherichia coli",unit:"/100 mL",std:"ไม่พบ"},
+      {id:"salmonella",label:"Salmonella sp.",unit:"/100 mL",std:"ไม่พบ"},
+      {id:"staph",label:"Staphylococcus aureus",unit:"CFU/100 mL",std:"น้อยกว่า 100"},
+    ]
+  },
+  "dialysis": {
+    label: "น้ำฟอกไต (ทุก 3 เดือน)",
+    freq: "3 เดือน",
+    params: [
+      {id:"ph",label:"ความเป็นกรด-ด่าง (pH)",unit:"",std:"6.5-8.5"},
+      {id:"ts",label:"ปริมาณวลสารทั้งหมด (TS)",unit:"mg/L",std:"ไม่เกิน 500"},
+      {id:"color",label:"สี",unit:"HZ",std:"ไม่เกิน 20"},
+      {id:"turbidity",label:"ความขุ่น",unit:"FAU",std:"ไม่เกิน 5"},
+      {id:"hardness",label:"ความกระด้าง (as CaCO₃)",unit:"mg/L",std:"ไม่เกิน 100"},
+      {id:"sulfate",label:"ซัลเฟต",unit:"mg/L",std:"ไม่เกิน 250"},
+      {id:"chloride",label:"คลอไรด์",unit:"mg/L",std:"ไม่เกิน 250"},
+      {id:"nitrate",label:"ไนตรต (คำนวณเป็นไนโตรเจน)",unit:"mg/L",std:"ไม่เกิน 4.0"},
+      {id:"iron",label:"เหล็ก",unit:"mg/L",std:"ไม่เกิน 0.3"},
+      {id:"toxins",label:"สารพิษอื่นๆ เช่น สารหนู สารตะกั่ว",unit:"mg/L",std:"ไม่เกิน 0.05"},
+      {id:"fluoride",label:"ฟลูออไรด์",unit:"mg/L",std:"ไม่เกิน 0.70"},
+      {id:"coliforms",label:"Coliforms",unit:"MPN/100 mL",std:"น้อยกว่า 2.2"},
+      {id:"ecoli",label:"Escherichia coli",unit:"/100 mL",std:"ไม่พบ"},
+      {id:"salmonella",label:"Salmonella sp.",unit:"/100 mL",std:"ไม่พบ"},
+      {id:"staph",label:"Staphylococcus aureus",unit:"CFU/100 mL",std:"น้อยกว่า 100"},
+    ]
+  },
+};
+
 function renderWaterAnalysis(){
-  const TYPES=[{id:"tap",label:"น้ำประปา (ทุก 6 เดือน)"},{id:"ro",label:"น้ำดื่ม RO (ทุก 3 เดือน)"},{id:"dialysis",label:"น้ำฟอกไต (ทุก 3 เดือน)"}];
+  const TYPES=[
+    {id:"tap",label:"น้ำประปา (ทุก 6 เดือน)"},
+    {id:"ro",label:"น้ำดื่ม RO (ทุก 3 เดือน)"},
+    {id:"dialysis",label:"น้ำฟอกไต (ทุก 3 เดือน)"}
+  ];
   const tab=S.selTab||"tap";
-  const docId=`water_analysis_${tab}`;
-  const records=S.data[docId]?.records||[];
+  const tdata=WATER_ANALYSIS_TYPES[tab];
+  const selMonth=S.waterAnalysisMonth??new Date().getMonth();
+  const selYear=S.waterAnalysisYear??S.selYear;
+  const docId=`water_analysis_${tab}_${selYear}_${selMonth}`;
+  const rec=S.data[docId]||{};
   const isAdmin=S.userRole==="admin";
+
+  const inp=(f,w=110,type="text")=>isAdmin
+    ?`<input type="${type}" class="tbl-input" style="width:${w}px" value="${rec[f]??""}" onchange="updateWaterAnalysisField('${docId}','${f}',this.value)">`
+    :`<span style="font-size:13px">${rec[f]||"-"}</span>`;
+
   return `<div>
     <div class="page-header">
-      <div><h2 style="font-size:19px;font-weight:600">ผลการตรวจวิเคราะห์น้ำ</h2></div>
-      <div style="display:flex;gap:8px">
-        ${isAdmin?`<button class="btn btn-teal btn-sm" onclick="addAnalysis('${docId}')">+ เพิ่มผลการตรวจ</button>`:""}
-        <button class="btn btn-ghost btn-sm" onclick="exportAnalysis('${docId}','${tab}')">Export CSV</button>
+      <div>
+        <h2 style="font-size:19px;font-weight:600">ผลการตรวจวิเคราะห์น้ำ</h2>
+        <p style="font-size:13px;color:var(--gray4);margin-top:2px">ความถี่: ${tdata.freq}</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <select class="input-field" style="width:130px" onchange="chWaterAnalysisMonth(this.value)">
+          ${MN.map((m,i)=>`<option value="${i}"${selMonth===i?" selected":""}>${m}</option>`).join("")}
+        </select>
+        <select class="input-field" style="width:86px" onchange="chWaterAnalysisYear(this.value)">
+          ${[2568,2569,2570].map(y=>`<option value="${y}"${selYear===y?" selected":""}>${y}</option>`).join("")}
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="exportWaterAnalysisNew('${docId}','${tab}','${MN[selMonth]}','${selYear}')">Export CSV</button>
       </div>
     </div>
     <div class="tab-bar">${TYPES.map(t=>`<button class="tab${tab===t.id?" active":""}" onclick="chTab('${t.id}')">${t.label}</button>`).join("")}</div>
-    <div style="overflow-x:auto">
-      <table class="table">
-        <thead><tr><th>วันที่</th><th>จุดเก็บ</th><th>pH</th><th>TDS</th><th>แบคทีเรีย</th><th>ผลการตรวจ</th><th>ผู้ตรวจ</th><th>หมายเหตุ</th>${isAdmin?"<th></th>":""}</tr></thead>
+
+    <div class="card">
+      <div style="margin-bottom:16px">
+        <label class="label">วันที่ส่งตัวอย่าง</label>
+        ${isAdmin?`<input type="date" class="input-field" style="width:180px" value="${rec.send_date||""}" onchange="updateWaterAnalysisField('${docId}','send_date',this.value)">`:`<span>${rec.send_date||"-"}</span>`}
+      </div>
+
+      <table class="table" style="margin-bottom:16px">
+        <thead>
+          <tr>
+            <th style="text-align:left;min-width:220px">รายการทดสอบ</th>
+            <th style="min-width:90px">หน่วย</th>
+            <th style="min-width:130px">ค่ามาตรฐาน</th>
+            <th style="min-width:130px">ผลการทดสอบ</th>
+          </tr>
+        </thead>
         <tbody>
-          ${records.length===0?`<tr><td colspan="${isAdmin?9:8}" style="text-align:center;color:var(--gray3);padding:24px">ยังไม่มีข้อมูล</td></tr>`:""}
-          ${records.map(r=>{
-            const i2=(f,w=80,type="text")=>isAdmin?`<input type="${type}" class="tbl-input" style="width:${w}px" value="${r[f]??""}" onchange="updateAnalysisField('${docId}','${r.id}','${f}',this.value)">`:`<span>${r[f]||"-"}</span>`;
-            return `<tr>
-              <td>${i2("date",110,"date")}</td><td>${i2("sample_point",120)}</td>
-              <td>${i2("ph",65)}</td><td>${i2("tds",65)}</td><td>${i2("bacteria",90)}</td>
-              <td>${isAdmin?`<select class="tbl-input" style="width:90px" onchange="updateAnalysisField('${docId}','${r.id}','result',this.value)"><option value="">-</option><option value="ผ่าน"${r.result==="ผ่าน"?" selected":""}>ผ่าน</option><option value="ไม่ผ่าน"${r.result==="ไม่ผ่าน"?" selected":""}>ไม่ผ่าน</option></select>`:`<span class="${r.result==="ผ่าน"?"badge-ok":r.result==="ไม่ผ่าน"?"badge-bad":""}">${r.result||"-"}</span>`}</td>
-              <td>${i2("inspector",90)}</td><td>${i2("note",110)}</td>
-              ${isAdmin?`<td><button class="btn btn-danger btn-sm" onclick="delAnalysis('${docId}','${r.id}')">ลบ</button></td>`:""}
-            </tr>`;
-          }).join("")}
+          ${tdata.params.map(p=>`<tr>
+            <td style="text-align:left;font-weight:500;font-size:13px">${p.label}</td>
+            <td style="color:var(--gray4);font-size:12px">${p.unit||"-"}</td>
+            <td style="color:var(--amber);font-size:12px">${p.std}</td>
+            <td>${inp(p.id,120)}</td>
+          </tr>`).join("")}
         </tbody>
       </table>
+
+      <div>
+        <label class="label">Link ไฟล์ผลตรวจ (Google Drive)</label>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          ${isAdmin?`<input type="url" class="input-field" style="max-width:480px" placeholder="https://drive.google.com/..." value="${rec.pdf_link||""}" onchange="updateWaterAnalysisField('${docId}','pdf_link',this.value)">`:""}
+          ${rec.pdf_link?`<a href="${rec.pdf_link}" target="_blank" class="btn btn-primary btn-sm" style="text-decoration:none;white-space:nowrap">📄 เปิดไฟล์ผลตรวจ</a>`:`<span style="font-size:13px;color:var(--gray3)">ยังไม่มีไฟล์แนบ</span>`}
+        </div>
+        <p style="font-size:12px;color:var(--gray3);margin-top:6px">วิธีรับ Link: เปิดไฟล์ใน Google Drive → คลิกขวา → "Get link" → "Copy link"</p>
+      </div>
     </div>
   </div>`;
 }
@@ -966,7 +1071,12 @@ window.navTo=async(page)=>{setState({page,loading:true});await preload(page);set
 window.doLogout=()=>signOut(auth);
 window.chMonth=(v)=>{S.selMonth=+v;preload(S.page).then(()=>setState({}));};
 window.chYear=(v)=>{S.selYear=+v;preload(S.page).then(()=>setState({}));};
-window.chTab=(t)=>{S.selTab=t;loadData(`water_analysis_${t}`).then(()=>render());};
+window.chTab=(t)=>{
+  S.selTab=t;
+  const m2=S.waterAnalysisMonth??new Date().getMonth();
+  const y2=S.waterAnalysisYear??S.selYear;
+  loadData(`water_analysis_${t}_${y2}_${m2}`).then(()=>render());
+};
 window.chParamTab=(t,bldg)=>{
   S.selParamTab=t;
   const PARAMS=bldg==="research"?PARAMS_RESEARCH:PARAMS_STH;
@@ -996,6 +1106,22 @@ window.updateParam=(docId,d,tid,shift,v)=>{
   debouncedSave(docId,S.data[docId]);
 };
 window.updateField=(docId,d,f,v)=>{
+  if(!S.data[docId])S.data[docId]={};
+  if(!S.data[docId][d])S.data[docId][d]={};
+  S.data[docId][d][f]=v;
+  // Auto-link water usage total to ww_research daily
+  if(docId.startsWith("water_usage_")){
+    const r=S.data[docId][d]||{};
+    const total=(+r.hospital||0)+(+r.khuan||0)+(+r.dorm||0);
+    const suffix=docId.replace("water_usage_","");
+    const wwDocId="ww_research_"+suffix;
+    if(!S.data[wwDocId])S.data[wwDocId]={};
+    if(!S.data[wwDocId][d])S.data[wwDocId][d]={};
+    S.data[wwDocId][d].water=total>0?total.toString():"";
+    debouncedSave(wwDocId,S.data[wwDocId]);
+  }
+  debouncedSave(docId,S.data[docId]);
+};
   if(!S.data[docId])S.data[docId]={};
   if(!S.data[docId][d])S.data[docId][d]={};
   S.data[docId][d][f]=v;
@@ -1055,6 +1181,28 @@ window.delAnalysisWW=async(docId,id)=>{
   if(!confirm("ลบรายการนี้?"))return;
   S.data[docId].records=S.data[docId].records.filter(r=>r.id!==id);
   await fsSet(docId,S.data[docId]);render();
+};
+window.chWaterAnalysisMonth=(v)=>{
+  S.waterAnalysisMonth=+v;
+  const tab=S.selTab||"tap";
+  loadData(`water_analysis_${tab}_${S.waterAnalysisYear??S.selYear}_${+v}`).then(()=>render());
+};
+window.chWaterAnalysisYear=(v)=>{
+  S.waterAnalysisYear=+v;
+  const tab=S.selTab||"tap";
+  loadData(`water_analysis_${tab}_${+v}_${S.waterAnalysisMonth??new Date().getMonth()}`).then(()=>render());
+};
+window.updateWaterAnalysisField=(docId,f,v)=>{
+  if(!S.data[docId])S.data[docId]={};
+  S.data[docId][f]=v;
+  debouncedSave(docId,S.data[docId]);
+};
+window.exportWaterAnalysisNew=(docId,tab,month,year)=>{
+  const rec=S.data[docId]||{};
+  const tdata=WATER_ANALYSIS_TYPES[tab];
+  const rows=tdata.params.map(p=>[p.label,p.unit,p.std,rec[p.id]||""]);
+  dlCsv(`ผลวิเคราะห์น้ำ_${tdata.label}_${month}_${year}.csv`,
+    ["รายการทดสอบ","หน่วย","ค่ามาตรฐาน","ผลการทดสอบ"],rows);
 };
 window.chWWAnalysisMonth=(bldg,v)=>{
   S.wwAnalysisMonth=+v;
@@ -1204,8 +1352,12 @@ async function preload(page){
   else if(page==="water-usage") ids.push(`water_usage_${y}_${m}`);
   else if(page==="chlorine-start") ids.push(`chlorine_start_${y}_${m}`);
   else if(page==="chlorine-end") ids.push(`chlorine_end_${y}_${m}`);
-  else if(page==="water-quality") ids.push(`water_quality_${y}_${m}`);
-  else if(page==="water-analysis") ids.push(`water_analysis_${S.selTab||"tap"}`);
+  else if(page==="water-analysis"){
+    const tab2=S.selTab||"tap";
+    const m2=S.waterAnalysisMonth??new Date().getMonth();
+    const y2=S.waterAnalysisYear??S.selYear;
+    ids.push(`water_analysis_${tab2}_${y2}_${m2}`);
+  }
   const missing=ids.filter(id=>S.data[id]===undefined);
   if(missing.length>0){
     const results=await Promise.all(missing.map(id=>fsGet(id)));
