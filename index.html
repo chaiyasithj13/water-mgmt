@@ -605,7 +605,7 @@ function renderWWSummary(bldg){
     <div style="overflow-x:auto">
       <table class="table">
         <thead>
-          <tr><th>เดือน</th><th>น้ำประปา (ลบ.ม.)</th><th>น้ำเสีย ×0.8 (ลบ.ม.)</th><th>น้ำเสีย Flowmeter (ลบ.ม.)</th><th>น้ำทิ้ง (ลบ.ม.)</th><th>ไฟฟ้า (kW)</th><th>ค่าไฟ (บาท)</th><th>คลอรีน (ล.)</th><th>ค่าคลอรีน (บาท)</th><th>เฉลี่ยน้ำเสีย/วัน</th></tr>
+          <tr><th>เดือน</th><th>น้ำประปา (ลบ.ม.)</th><th>น้ำเสียเข้าระบบ (ลบ.ม.)</th><th>น้ำเสีย Flowmeter (ลบ.ม.)</th><th>น้ำทิ้ง (ลบ.ม.)</th><th>ไฟฟ้า (kW)</th><th>ค่าไฟฟ้า (บาท)</th><th>คลอรีน (ลิตร)</th><th>ค่าคลอรีน (บาท)</th><th>เฉลี่ยน้ำประปา/วัน</th><th>เฉลี่ยน้ำเสีย/วัน</th></tr>
         </thead>
         <tbody>
           ${MN.map((mn,mi)=>{
@@ -618,6 +618,7 @@ function renderWWSummary(bldg){
               <td>${empty?"-":tW.toFixed(0)}</td><td>${empty?"-":tWaste.toFixed(1)}</td><td>${empty?"-":tF.toFixed(1)}</td>
               <td>${empty?"-":tO.toFixed(1)}</td><td>${empty?"-":tE.toFixed(0)}</td><td>${empty?"-":tC.toFixed(2)}</td>
               <td>${empty?"-":tCl.toFixed(1)}</td><td>${empty?"-":tClC.toFixed(2)}</td>
+              <td>${empty?"-":(cnt>0?(tW/cnt).toFixed(2):0)}</td>
               <td>${empty?"-":(cnt>0?(tWaste/cnt).toFixed(2):0)}</td>
             </tr>`;
           }).join("")}
