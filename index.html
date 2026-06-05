@@ -64,8 +64,9 @@ input,select,textarea,button{font-family:'Sarabun',sans-serif}
 .tbl-input{width:72px;padding:3px 5px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:'Sarabun',sans-serif;text-align:center}
 .tbl-input:focus{outline:none;border-color:var(--blue)}
 .sidebar{width:240px;min-height:100vh;background:var(--white);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s;overflow:hidden}
-.sidebar.collapsed{width:56px}
-.main-content{flex:1;padding:24px 28px;overflow-y:auto;min-width:0}
+.sidebar.collapsed{width:0px;border:none}
+.sidebar-fab{position:fixed;top:14px;left:14px;z-index:300;width:42px;height:42px;background:var(--blue);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;box-shadow:0 3px 10px rgba(0,0,0,.25);transition:opacity .15s}.sidebar-fab:hover{opacity:.88}
+.main-content{flex:1;padding:24px 28px;overflow-y:auto;min-width:0;transition:padding .2s}
 .page-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:12px}
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:100}
@@ -107,7 +108,7 @@ const CHART_COLORS = ["#1a6fb5","#0f7c63","#e05c00","#8b1a8b","#c0392b","#b06b00
 const PARAMS_RESEARCH = [
   {id:"ph",   label:"pH",          unit:"",      tanks:[{g:"EQ",ids:["EQ1","EQ2"]},{g:"Aeration",ids:["AE1","AE2","AE3","AE4"]},{g:"Effluent",ids:["EFF"]}]},
   {id:"tds",  label:"TDS",         unit:"mg/L",  tanks:[{g:"EQ",ids:["EQ1","EQ2"]},{g:"Effluent",ids:["EFF"]}]},
-  {id:"cl",   label:"Cl",          unit:"mg/L",  tanks:[{g:"Effluent",ids:["EFF"]}]},
+  {id:"cl",   label:"คลอรีน",      unit:"mg/L",  tanks:[{g:"Effluent",ids:["EFF"]}]},
   {id:"temp", label:"อุณหภูมิ",    unit:"°C",    tanks:[{g:"EQ",ids:["EQ1","EQ2"]},{g:"Aeration",ids:["AE1","AE2","AE3","AE4"]},{g:"Effluent",ids:["EFF"]}]},
   {id:"sv30", label:"SV30",        unit:"ml/L",  tanks:[{g:"Aeration",ids:["AE1","AE2","AE3","AE4"]}]},
   {id:"do",   label:"DO",          unit:"mg/L",  tanks:[{g:"Aeration",ids:["AE1","AE2","AE3","AE4"]}]},
@@ -116,7 +117,7 @@ const PARAMS_RESEARCH = [
 const PARAMS_STH = [
   {id:"ph",   label:"pH",  unit:"",      tanks:[{g:"EQ",ids:["EQ"]},{g:"Aeration",ids:["AE"]},{g:"Effluent",ids:["EFF"]}]},
   {id:"tds",  label:"TDS", unit:"mg/L",  tanks:[{g:"EQ",ids:["EQ"]},{g:"Effluent",ids:["EFF"]}]},
-  {id:"cl",   label:"Cl",  unit:"mg/L",  tanks:[{g:"Effluent",ids:["EFF"]}]},
+  {id:"cl",   label:"คลอรีน",  unit:"mg/L",  tanks:[{g:"Effluent",ids:["EFF"]}]},
   {id:"do",   label:"DO",  unit:"mg/L",  tanks:[{g:"Aeration",ids:["AE"]}]},
 ];
 
@@ -167,6 +168,7 @@ function render(){
       <main class="main-content">${renderPage()}</main>
     </div>
     ${S.modal?renderModal():""}
+    ${S.collapsed?`<button class="sidebar-fab" onclick="toggleSidebar()" title="เปิดเมนู"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>`:""}
     ${S.saving?`<div class="saving-toast">กำลังบันทึก...</div>`:""}
   `;
   bindEvents();
@@ -349,7 +351,7 @@ function renderWWDaily(bldg){
   const rows=S.data[docId]||{},days=getDays(m),isAdmin=S.userRole==="admin";
   let tW=0,tWaste=0,tFlow=0,tOut=0,tElec=0,tCost=0,tCl=0,tClCost=0;
   for(let d=1;d<=days;d++){const r=rows[d]||{};
-    tW+=+r.water||0;tWaste+=+r.waste||0;tFlow+=+r.ww_flow||0;tOut+=+r.waste_out||0;
+    tW+=+r.water||0;tWaste+=r.water?(+r.water*0.8):0;tFlow+=+r.ww_flow||0;tOut+=+r.waste_out||0;
     tElec+=+r.elec_kwh||0;tCost+=+r.elec_total||0;tCl+=+r.chlorine_l||0;tClCost+=+r.chlorine_cost||0;
   }
   const inp=(d,f,w=72,type="number")=>isAdmin
@@ -371,7 +373,7 @@ function renderWWDaily(bldg){
       </div>
     </div>
     <div class="stats-grid">
-      ${[["น้ำประปา",tW.toFixed(0),"ลบ.ม."],["น้ำเสีย",tWaste.toFixed(1),"ลบ.ม."],["Flowmeter",tFlow.toFixed(1),"ลบ.ม."],["น้ำทิ้ง",tOut.toFixed(1),"ลบ.ม."],["ไฟฟ้า",tElec.toFixed(0),"kW"],["ค่าไฟ",tCost.toFixed(2),"บาท"],["คลอรีน",tCl.toFixed(1),"ลิตร"],["ค่าคลอรีน",tClCost.toFixed(2),"บาท"]].map(([l,v,u])=>`<div class="stat-card"><div class="stat-lbl">${l}</div><div class="stat-val" style="font-size:17px">${v}</div><div style="font-size:11px;color:var(--gray3)">${u}</div></div>`).join("")}
+      ${[["น้ำประปา",tW.toFixed(0),"ลบ.ม."],["น้ำเสีย (×0.8)",tWaste.toFixed(1),"ลบ.ม."],["Flowmeter",tFlow.toFixed(1),"ลบ.ม."],["น้ำทิ้ง",tOut.toFixed(1),"ลบ.ม."],["ไฟฟ้า",tElec.toFixed(0),"kW"],["ค่าไฟ",tCost.toFixed(2),"บาท"],["คลอรีน",tCl.toFixed(1),"ลิตร"],["ค่าคลอรีน",tClCost.toFixed(2),"บาท"]].map(([l,v,u])=>`<div class="stat-card"><div class="stat-lbl">${l}</div><div class="stat-val" style="font-size:17px">${v}</div><div style="font-size:11px;color:var(--gray3)">${u}</div></div>`).join("")}
     </div>
 
     <!-- กราฟ -->
@@ -396,13 +398,13 @@ function renderWWDaily(bldg){
         <thead>
           <tr>
             <th rowspan="2">วันที่</th>
-            <th>น้ำประปา</th><th>น้ำเสีย</th><th>Flowmeter</th><th>น้ำทิ้ง</th>
-            <th>ไฟฟ้า</th><th>ค่าไฟ/หน่วย</th><th style="background:#dbeeff">ค่าไฟรวม</th>
+            <th>น้ำประปา</th><th>น้ำเสีย</th><th>น้ำเสีย (Flowmeter)</th><th>น้ำทิ้ง</th>
+            <th>ไฟฟ้า</th><th>ค่าไฟฟ้า/หน่วย</th><th style="background:#dbeeff">ค่าไฟรวม</th>
             <th>คลอรีน</th><th>ค่าคลอรีน</th>
           </tr>
           <tr>
             <th>(ลบ.ม.)</th><th>(ลบ.ม.)</th><th>(ลบ.ม.)</th><th>(ลบ.ม.)</th>
-            <th>(kW)</th><th>(บาท/kW)</th><th style="background:#dbeeff">(บาท)</th>
+            <th>(kW)</th><th>(บาท/kWh)</th><th style="background:#dbeeff">(บาท)</th>
             <th>(ลิตร)</th><th>(บาท)</th>
           </tr>
         </thead>
@@ -413,7 +415,7 @@ function renderWWDaily(bldg){
             return `<tr>
               <td style="font-weight:500;color:var(--gray4)">${d}</td>
               <td>${inp(d,"water",72)}</td>
-              <td>${inp(d,"waste",72)}</td>
+              <td style="background:#f0f7ff;font-weight:500;color:var(--blue)">${rows[d]?.water?(+rows[d].water*0.8).toFixed(2):"-"}</td>
               <td>${inp(d,"ww_flow",72)}</td>
               <td>${inp(d,"waste_out",72)}</td>
               <td>${inp(d,"elec_kwh",72)}</td>
@@ -425,7 +427,7 @@ function renderWWDaily(bldg){
           }).join("")}
           <tr style="background:var(--gray0);font-weight:600">
             <td>รวม</td>
-            <td>${tW.toFixed(0)}</td><td>${tWaste.toFixed(1)}</td><td>${tFlow.toFixed(1)}</td><td>${tOut.toFixed(1)}</td>
+            <td>${tW.toFixed(0)}</td><td style="background:#f0f7ff;color:var(--blue);font-weight:500">${tWaste.toFixed(1)}</td><td>${tFlow.toFixed(1)}</td><td>${tOut.toFixed(1)}</td>
             <td>${tElec.toFixed(0)}</td><td>-</td><td>${tCost.toFixed(2)}</td>
             <td>${tCl.toFixed(1)}</td><td>${tClCost.toFixed(2)}</td>
           </tr>
@@ -507,36 +509,77 @@ function renderWWParam(bldg){
 }
 
 // ── WW ANALYSIS ────────────────────────────────────────────────
+const WW_ANALYSIS_PARAMS = [
+  {id:"ph",       label:"pH",                    unit:""},
+  {id:"bod",      label:"BOD",                   unit:"mg/L"},
+  {id:"cod",      label:"COD",                   unit:"mg/L"},
+  {id:"ss",       label:"SS",                    unit:"mg/L"},
+  {id:"tds",      label:"TDS",                   unit:"mg/L"},
+  {id:"tkn",      label:"TKN",                   unit:"mg/L"},
+  {id:"sulfide",  label:"Sulfide",               unit:"mg/L"},
+  {id:"oil",      label:"น้ำมันและไขมัน",        unit:"mg/L"},
+  {id:"cl_free",  label:"คลอรีนอิสระ",           unit:"mg/L"},
+  {id:"t_coli",   label:"Total Coliform",        unit:""},
+  {id:"f_coli",   label:"Fecal Coliform",        unit:""},
+];
+
 function renderWWAnalysis(bldg){
   const title=bldg==="research"?"อาคารวิจัยฯ":"อาคารรัตนชีวรักษ์ (สธ.)";
-  const docId=`ww_analysis_${bldg}`;
-  const records=S.data[docId]?.records||[];
+  const selMonth=S.wwAnalysisMonth??new Date().getMonth();
+  const selYear=S.wwAnalysisYear??S.selYear;
+  const docId=`ww_analysis_${bldg}_${selYear}_${selMonth}`;
+  const rec=S.data[docId]||{};
   const isAdmin=S.userRole==="admin";
+
+  const inp=(f,w=80,type="number")=>isAdmin
+    ?`<input type="${type}" class="tbl-input" style="width:${w}px" value="${rec[f]??""}" onchange="updateWWAnalysisField('${docId}','${f}',this.value)" step="any">`
+    :`<span>${rec[f]||"-"}</span>`;
+
   return `<div>
     <div class="page-header">
-      <div><h2 style="font-size:19px;font-weight:600">ผลวิเคราะห์น้ำ — ${title}</h2></div>
-      <div style="display:flex;gap:8px">
-        ${isAdmin?`<button class="btn btn-teal btn-sm" onclick="addAnalysis('${docId}')">+ เพิ่มผลการตรวจ</button>`:""}
-        <button class="btn btn-ghost btn-sm" onclick="exportAnalysis('${docId}','${title}')">Export CSV</button>
+      <div><h2 style="font-size:19px;font-weight:600">ผลวิเคราะห์น้ำเสีย — ${title}</h2>
+        <p style="font-size:13px;color:var(--gray4);margin-top:2px">ส่งตรวจทุกเดือน</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <select class="input-field" style="width:130px" onchange="chWWAnalysisMonth('${bldg}',this.value)">
+          ${MN.map((m,i)=>`<option value="${i}"${selMonth===i?" selected":""}>${m}</option>`).join("")}
+        </select>
+        <select class="input-field" style="width:86px" onchange="chWWAnalysisYear('${bldg}',this.value)">
+          ${[2568,2569,2570].map(y=>`<option value="${y}"${selYear===y?" selected":""}>${y}</option>`).join("")}
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="exportWWAnalysis('${docId}','${title}','${MN[selMonth]}','${selYear}')">Export CSV</button>
       </div>
     </div>
-    <div style="overflow-x:auto">
-      <table class="table">
-        <thead><tr><th>วันที่</th><th>จุดเก็บตัวอย่าง</th><th>pH</th><th>BOD</th><th>SS</th><th>TKN</th><th>ผลการตรวจ</th><th>ผู้ตรวจ</th><th>หมายเหตุ</th>${isAdmin?"<th></th>":""}</tr></thead>
+
+    <div class="card">
+      <div style="margin-bottom:16px">
+        <label class="label">วันที่ส่งตัวอย่าง</label>
+        ${isAdmin?`<input type="date" class="input-field" style="width:180px" value="${rec.send_date||""}" onchange="updateWWAnalysisField('${docId}','send_date',this.value)">`:`<span>${rec.send_date||"-"}</span>`}
+      </div>
+
+      <table class="table" style="margin-bottom:16px">
+        <thead>
+          <tr>
+            <th style="text-align:left;min-width:160px">พารามิเตอร์</th>
+            <th style="min-width:120px">ผลการวิเคราะห์</th>
+          </tr>
+        </thead>
         <tbody>
-          ${records.length===0?`<tr><td colspan="${isAdmin?10:9}" style="text-align:center;color:var(--gray3);padding:24px">ยังไม่มีข้อมูล</td></tr>`:""}
-          ${records.map(r=>{
-            const inp2=(f,w=80,type="text")=>isAdmin?`<input type="${type}" class="tbl-input" style="width:${w}px" value="${r[f]??""}" onchange="updateAnalysisWW('${docId}','${r.id}','${f}',this.value)">`:`<span>${r[f]||"-"}</span>`;
-            return `<tr>
-              <td>${inp2("date",110,"date")}</td><td>${inp2("sample",120)}</td>
-              <td>${inp2("ph",65)}</td><td>${inp2("bod",65)}</td><td>${inp2("ss",65)}</td><td>${inp2("tkn",65)}</td>
-              <td>${isAdmin?`<select class="tbl-input" style="width:90px" onchange="updateAnalysisWW('${docId}','${r.id}','result',this.value)"><option value="">-</option><option value="ผ่าน"${r.result==="ผ่าน"?" selected":""}>ผ่าน</option><option value="ไม่ผ่าน"${r.result==="ไม่ผ่าน"?" selected":""}>ไม่ผ่าน</option></select>`:`<span class="${r.result==="ผ่าน"?"badge-ok":r.result==="ไม่ผ่าน"?"badge-bad":""}">${r.result||"-"}</span>`}</td>
-              <td>${inp2("inspector",90)}</td><td>${inp2("note",110)}</td>
-              ${isAdmin?`<td><button class="btn btn-danger btn-sm" onclick="delAnalysisWW('${docId}','${r.id}')">ลบ</button></td>`:""}
-            </tr>`;
-          }).join("")}
+          ${WW_ANALYSIS_PARAMS.map(p=>`<tr>
+            <td style="text-align:left;font-weight:500">${p.label}${p.unit?" ("+p.unit+")":""}</td>
+            <td>${inp(p.id,110,p.id==="t_coli"||p.id==="f_coli"?"text":"number")}</td>
+          </tr>`).join("")}
         </tbody>
       </table>
+
+      <div>
+        <label class="label">Link ไฟล์ผลตรวจ (Google Drive)</label>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          ${isAdmin?`<input type="url" class="input-field" style="max-width:480px" placeholder="https://drive.google.com/..." value="${rec.pdf_link||""}" onchange="updateWWAnalysisField('${docId}','pdf_link',this.value)">`:""}
+          ${rec.pdf_link?`<a href="${rec.pdf_link}" target="_blank" class="btn btn-primary btn-sm" style="text-decoration:none;white-space:nowrap">📄 เปิดไฟล์ผลตรวจ</a>`:`<span style="font-size:13px;color:var(--gray3)">ยังไม่มีไฟล์แนบ</span>`}
+        </div>
+        <p style="font-size:12px;color:var(--gray3);margin-top:6px">วิธีรับ Link: เปิดไฟล์ใน Google Drive → คลิกขวา → "Get link" → "Copy link"</p>
+      </div>
     </div>
   </div>`;
 }
@@ -558,13 +601,13 @@ function renderWWSummary(bldg){
     <div style="overflow-x:auto">
       <table class="table">
         <thead>
-          <tr><th>เดือน</th><th>น้ำประปา (ลบ.ม.)</th><th>น้ำเสีย (ลบ.ม.)</th><th>Flowmeter (ลบ.ม.)</th><th>น้ำทิ้ง (ลบ.ม.)</th><th>ไฟฟ้า (kW)</th><th>ค่าไฟ (บาท)</th><th>คลอรีน (ล.)</th><th>ค่าคลอรีน (บาท)</th><th>เฉลี่ยน้ำเสีย/วัน</th></tr>
+          <tr><th>เดือน</th><th>น้ำประปา (ลบ.ม.)</th><th>น้ำเสีย ×0.8 (ลบ.ม.)</th><th>น้ำเสีย Flowmeter (ลบ.ม.)</th><th>น้ำทิ้ง (ลบ.ม.)</th><th>ไฟฟ้า (kW)</th><th>ค่าไฟ (บาท)</th><th>คลอรีน (ล.)</th><th>ค่าคลอรีน (บาท)</th><th>เฉลี่ยน้ำเสีย/วัน</th></tr>
         </thead>
         <tbody>
           ${MN.map((mn,mi)=>{
             const rows=S.data[`ww_${bldg}_${y}_${mi}`]||{},days=getDays(mi);
             let tW=0,tWaste=0,tF=0,tO=0,tE=0,tC=0,tCl=0,tClC=0,cnt=0;
-            for(let d=1;d<=days;d++){const r=rows[d]||{};if(r.water){tW+=+r.water||0;tWaste+=+r.waste||0;tF+=+r.ww_flow||0;tO+=+r.waste_out||0;tE+=+r.elec_kwh||0;tC+=+r.elec_total||0;tCl+=+r.chlorine_l||0;tClC+=+r.chlorine_cost||0;cnt++;}}
+            for(let d=1;d<=days;d++){const r=rows[d]||{};if(r.water){tW+=+r.water||0;tWaste+=r.water?(+r.water*0.8):0;tF+=+r.ww_flow||0;tO+=+r.waste_out||0;tE+=+r.elec_kwh||0;tC+=+r.elec_total||0;tCl+=+r.chlorine_l||0;tClC+=+r.chlorine_cost||0;cnt++;}}
             const empty=cnt===0;
             return `<tr style="opacity:${empty?.45:1}">
               <td style="font-weight:500;text-align:left">${mn}</td>
@@ -973,6 +1016,25 @@ window.delAnalysisWW=async(docId,id)=>{
   S.data[docId].records=S.data[docId].records.filter(r=>r.id!==id);
   await fsSet(docId,S.data[docId]);render();
 };
+window.chWWAnalysisMonth=(bldg,v)=>{
+  S.wwAnalysisMonth=+v;
+  loadData(`ww_analysis_${bldg}_${S.wwAnalysisYear??S.selYear}_${+v}`).then(()=>render());
+};
+window.chWWAnalysisYear=(bldg,v)=>{
+  S.wwAnalysisYear=+v;
+  loadData(`ww_analysis_${bldg}_${+v}_${S.wwAnalysisMonth??new Date().getMonth()}`).then(()=>render());
+};
+window.updateWWAnalysisField=(docId,f,v)=>{
+  if(!S.data[docId])S.data[docId]={};
+  S.data[docId][f]=v;
+  debouncedSave(docId,S.data[docId]);
+};
+window.exportWWAnalysis=(docId,title,month,year)=>{
+  const rec=S.data[docId]||{};
+  const rows=WW_ANALYSIS_PARAMS.map(p=>[p.label+(p.unit?" ("+p.unit+")":""),rec[p.id]||""]);
+  dlCsv(`ผลวิเคราะห์น้ำเสีย_${title}_${month}_${year}.csv`,
+    ["พารามิเตอร์","ผลการวิเคราะห์"],rows);
+};
 window.updateAnalysisWW=(docId,id,f,v)=>{
   const r=S.data[docId]?.records?.find(r=>r.id===id);
   if(r){r[f]=v;debouncedSave(docId,S.data[docId]);}
@@ -1008,7 +1070,7 @@ window.exportWWDaily=(docId,title)=>{
   const rows=S.data[docId]||{},m=S.selMonth,y=S.selYear,days=getDays(m);
   dlCsv(`น้ำเสีย_${title}_${MN[m]}_${y}.csv`,
     ["วันที่","น้ำประปา","น้ำเสีย","Flowmeter","น้ำทิ้ง","ไฟฟ้า(kW)","ค่าไฟ/หน่วย","ค่าไฟรวม","คลอรีน(ล.)","ค่าคลอรีน"],
-    Array.from({length:days},(_,i)=>i+1).map(d=>{const r=rows[d]||{};return[d,r.water,r.waste,r.ww_flow,r.waste_out,r.elec_kwh,r.elec_rate,r.elec_total,r.chlorine_l,r.chlorine_cost];}));
+    Array.from({length:days},(_,i)=>i+1).map(d=>{const r=rows[d]||{};return[d,r.water,r.water?(+r.water*0.8).toFixed(2):"",r.ww_flow,r.waste_out,r.elec_kwh,r.elec_rate,r.elec_total,r.chlorine_l,r.chlorine_cost];}));
 };
 window.exportParam=(docId,label,title)=>{
   const rows=S.data[docId]||{},m=S.selMonth,y=S.selYear,days=getDays(m);
@@ -1027,7 +1089,7 @@ window.exportWWSummary=(bldg,title)=>{
     MN.map((mn,mi)=>{
       const rows=S.data[`ww_${bldg}_${y}_${mi}`]||{},days=getDays(mi);
       let tW=0,tWaste=0,tF=0,tO=0,tE=0,tC=0,tCl=0,tClC=0,cnt=0;
-      for(let d=1;d<=days;d++){const r=rows[d]||{};if(r.water){tW+=+r.water||0;tWaste+=+r.waste||0;tF+=+r.ww_flow||0;tO+=+r.waste_out||0;tE+=+r.elec_kwh||0;tC+=+r.elec_total||0;tCl+=+r.chlorine_l||0;tClC+=+r.chlorine_cost||0;cnt++;}}
+      for(let d=1;d<=days;d++){const r=rows[d]||{};if(r.water){tW+=+r.water||0;tWaste+=r.water?(+r.water*0.8):0;tF+=+r.ww_flow||0;tO+=+r.waste_out||0;tE+=+r.elec_kwh||0;tC+=+r.elec_total||0;tCl+=+r.chlorine_l||0;tClC+=+r.chlorine_cost||0;cnt++;}}
       return[mn,tW.toFixed(0),tWaste.toFixed(1),tF.toFixed(1),tO.toFixed(1),tE.toFixed(0),tC.toFixed(2),tCl.toFixed(1),tClC.toFixed(2),cnt>0?(tWaste/cnt).toFixed(2):0];
     }));
 };
@@ -1081,8 +1143,16 @@ async function preload(page){
     ids.push(`ww_param_${b}_${pid}_${y}_${m}`);
     if(S.chartMode==="monthly") for(let i=0;i<12;i++)ids.push(`ww_param_${b}_${pid}_${y}_${i}`);
   }
-  else if(page==="ww-research-analysis") ids.push("ww_analysis_research");
-  else if(page==="ww-sth-analysis") ids.push("ww_analysis_sth");
+  else if(page==="ww-research-analysis"){
+    const m2=S.wwAnalysisMonth??new Date().getMonth();
+    const y2=S.wwAnalysisYear??S.selYear;
+    ids.push(`ww_analysis_research_${y2}_${m2}`);
+  }
+  else if(page==="ww-sth-analysis"){
+    const m2=S.wwAnalysisMonth??new Date().getMonth();
+    const y2=S.wwAnalysisYear??S.selYear;
+    ids.push(`ww_analysis_sth_${y2}_${m2}`);
+  }
   else if(page==="ww-research-summary") for(let i=0;i<12;i++)ids.push(`ww_research_${y}_${i}`);
   else if(page==="ww-sth-summary") for(let i=0;i<12;i++)ids.push(`ww_sth_${y}_${i}`);
   else if(page==="water-usage") ids.push(`water_usage_${y}_${m}`);
