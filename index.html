@@ -4,29 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ระบบจัดการน้ำ — รพ.สงขลานครินทร์</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --blue:#1a6fb5;--blue-light:#e8f2fb;--blue-mid:#4d94d6;
+  --blue:#1a6fb5;--blue-light:#e8f2fb;
   --teal:#0f7c63;--teal-light:#e0f5f0;
   --amber:#b06b00;--amber-light:#fff4e0;
   --red:#c0392b;--red-light:#fdecea;
   --green:#1e7e34;--green-light:#e8f5e9;
   --gray0:#f7f8fa;--gray1:#eef0f3;--gray2:#dde0e6;
   --gray3:#b0b6c3;--gray4:#6b7280;--gray5:#374151;
-  --white:#ffffff;--text:#1f2937;--border:#dde1e8;
+  --white:#fff;--text:#1f2937;--border:#dde1e8;
   --radius:8px;--radius-lg:12px;
 }
 body{font-family:'Sarabun',sans-serif;font-size:15px;color:var(--text);background:var(--gray0);min-height:100vh}
 input,select,textarea,button{font-family:'Sarabun',sans-serif}
 .btn{padding:7px 16px;border-radius:var(--radius);border:none;font-size:14px;font-weight:500;cursor:pointer;transition:opacity .15s,transform .1s}
 .btn:active{transform:scale(0.97)}
-.btn-primary{background:var(--blue);color:white}.btn-primary:hover{opacity:.88}
-.btn-teal{background:var(--teal);color:white}.btn-teal:hover{opacity:.88}
+.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{opacity:.88}
+.btn-teal{background:var(--teal);color:#fff}.btn-teal:hover{opacity:.88}
 .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--gray5)}.btn-ghost:hover{background:var(--gray1)}
-.btn-danger{background:var(--red);color:white}.btn-danger:hover{opacity:.88}
+.btn-danger{background:var(--red);color:#fff}.btn-danger:hover{opacity:.88}
 .btn-sm{padding:4px 10px;font-size:12px}
+.btn-toggle{padding:5px 12px;border-radius:99px;border:1.5px solid;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s}
 .card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .input-field{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);background:var(--white)}
 .input-field:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,111,181,.12)}
@@ -35,205 +37,197 @@ input,select,textarea,button{font-family:'Sarabun',sans-serif}
 .tag-admin{background:var(--blue-light);color:var(--blue)}
 .tag-viewer{background:var(--teal-light);color:var(--teal)}
 .table{width:100%;border-collapse:collapse;font-size:13px}
-.table th{background:var(--gray0);padding:9px 12px;text-align:left;font-weight:600;font-size:12px;color:var(--gray4);border-bottom:1px solid var(--border)}
-.table td{padding:7px 10px;border-bottom:1px solid var(--gray1);vertical-align:middle}
+.table th{background:var(--gray0);padding:8px 10px;text-align:center;font-weight:600;font-size:12px;color:var(--gray4);border-bottom:1px solid var(--border);border:1px solid var(--border)}
+.table td{padding:6px 8px;border:1px solid var(--gray1);vertical-align:middle;text-align:center}
 .table tr:hover td{background:var(--gray0)}
 .stat-card{background:var(--gray0);border-radius:var(--radius);padding:12px 16px}
-.stat-val{font-size:22px;font-weight:600;color:var(--blue)}
+.stat-val{font-size:20px;font-weight:600;color:var(--blue)}
 .stat-lbl{font-size:12px;color:var(--gray4);margin-top:2px}
-.tab-bar{display:flex;gap:4px;border-bottom:2px solid var(--gray1);margin-bottom:20px}
-.tab{padding:9px 16px;font-size:14px;background:none;border:none;color:var(--gray4);border-bottom:2px solid transparent;margin-bottom:-2px;font-weight:500;cursor:pointer;transition:color .15s}
+.tab-bar{display:flex;gap:4px;border-bottom:2px solid var(--gray1);margin-bottom:20px;flex-wrap:wrap}
+.tab{padding:8px 14px;font-size:13px;background:none;border:none;color:var(--gray4);border-bottom:2px solid transparent;margin-bottom:-2px;font-weight:500;cursor:pointer;transition:color .15s}
 .tab.active{color:var(--blue);border-bottom-color:var(--blue)}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:var(--radius);font-size:13px;font-weight:500;color:var(--gray4);cursor:pointer;transition:background .15s,color .15s;border:none;background:none;width:100%;text-align:left}
+.nav-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--radius);font-size:13px;font-weight:500;color:var(--gray4);cursor:pointer;transition:background .15s,color .15s;border:none;background:none;width:100%;text-align:left}
 .nav-item:hover{background:var(--gray1);color:var(--gray5)}
 .nav-item.active{background:var(--blue-light);color:var(--blue)}
-.nav-section{font-size:11px;font-weight:600;color:var(--gray3);text-transform:uppercase;letter-spacing:.06em;padding:12px 14px 4px}
+.nav-section{font-size:11px;font-weight:600;color:var(--gray3);text-transform:uppercase;letter-spacing:.06em;padding:10px 12px 3px}
+.nav-subsection{font-size:11px;font-weight:600;color:var(--blue);padding:6px 12px 2px 20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .alert{padding:10px 14px;border-radius:var(--radius);font-size:13px}
 .alert-info{background:var(--blue-light);color:var(--blue)}
 .alert-success{background:var(--green-light);color:var(--green)}
 .alert-warn{background:var(--amber-light);color:var(--amber)}
 .alert-danger{background:var(--red-light);color:var(--red)}
 .badge-ok{color:var(--green);font-weight:500}
-.badge-warn{color:var(--amber);font-weight:500}
 .badge-bad{color:var(--red);font-weight:500}
 .loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;z-index:999;font-size:15px;color:var(--gray4)}
 .spinner{width:24px;height:24px;border:3px solid var(--gray2);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;margin-right:12px}
 @keyframes spin{to{transform:rotate(360deg)}}
-.tbl-input{width:90px;padding:4px 7px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:'Sarabun',sans-serif}
+.tbl-input{width:72px;padding:3px 5px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:'Sarabun',sans-serif;text-align:center}
 .tbl-input:focus{outline:none;border-color:var(--blue)}
 .sidebar{width:240px;min-height:100vh;background:var(--white);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s;overflow:hidden}
-.sidebar.collapsed{width:58px}
-.main-content{flex:1;padding:28px 32px;overflow-y:auto;min-width:0}
+.sidebar.collapsed{width:56px}
+.main-content{flex:1;padding:24px 28px;overflow-y:auto;min-width:0}
 .page-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:12px}
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:100}
 .modal{background:var(--white);border-radius:var(--radius-lg);padding:28px;width:420px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.chart-container{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:20px}
+.saving-toast{position:fixed;bottom:20px;right:24px;background:var(--blue);color:#fff;padding:8px 18px;border-radius:var(--radius);font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.2);z-index:200}
 </style>
 </head>
 <body>
-
-<div id="app">
-  <div class="loading-overlay"><div class="spinner"></div>กำลังโหลด...</div>
-</div>
+<div id="app"><div class="loading-overlay"><div class="spinner"></div>กำลังโหลด...</div></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-// ─── Firebase Config ───────────────────────────────────────────
 const firebaseConfig = {
-  apiKey: "AIzaSyC9sS8MNSRreA45ZpBlePpEHpf9-BeLLOc",
-  authDomain: "water-mgmt-psu.firebaseapp.com",
-  projectId: "water-mgmt-psu",
-  storageBucket: "water-mgmt-psu.firebasestorage.app",
-  messagingSenderId: "537296710558",
-  appId: "1:537296710558:web:e369b0df817a01a11f048f"
+  apiKey:"AIzaSyC9sS8MNSRreA45ZpBlePpEHpf9-BeLLOc",
+  authDomain:"water-mgmt-psu.firebaseapp.com",
+  projectId:"water-mgmt-psu",
+  storageBucket:"water-mgmt-psu.firebasestorage.app",
+  messagingSenderId:"537296710558",
+  appId:"1:537296710558:web:e369b0df817a01a11f048f"
 };
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+const auth = getAuth(fbApp);
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-
-// ─── Constants ─────────────────────────────────────────────────
-const MONTH_NAMES = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
-const MONTHS_SHORT = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
-const CUR_YEAR = 2569;
-const getDays = (m) => new Date(m >= 7 ? 2025 : 2026, m+1, 0).getDate();
-const BUILDINGS_END = ["อาคารโรงพยาบาล","อาคารเฉลิมพระบารมี (ส่วนหน้า)","อาคารเฉลิมพระบารมี (ส่วนหลัง)","อาคาร 100 ปี","อาคารรัตนชีวรักษ์ (สธ.)","อาคารศรีเวชวัฒน์"];
+// ── Constants ──────────────────────────────────────────────────
+const MN = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+const MS = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+const CY = 2569;
+const getDays = m => new Date(m>=7?2025:2026, m+1, 0).getDate();
+const BLDG_END = ["อาคารโรงพยาบาล","อาคารเฉลิมพระบารมี (ส่วนหน้า)","อาคารเฉลิมพระบารมี (ส่วนหลัง)","อาคาร 100 ปี","อาคารรัตนชีวรักษ์ (สธ.)","อาคารศรีเวชวัฒน์"];
 const SPOTS = {"อาคารโรงพยาบาล":"ห้องน้ำชั้น 12","อาคารเฉลิมพระบารมี (ส่วนหน้า)":"ห้องน้ำข้างเซเว่น","อาคารเฉลิมพระบารมี (ส่วนหลัง)":"ห้องล้างจาน","อาคาร 100 ปี":"ห้องน้ำชั้นล่าง","อาคารรัตนชีวรักษ์ (สธ.)":"ลานจอดรถ","อาคารศรีเวชวัฒน์":"ห้องน้ำชั้นล่าง"};
+const CHART_COLORS = ["#1a6fb5","#0f7c63","#e05c00","#8b1a8b","#c0392b","#b06b00","#1e7e34","#2980b9"];
 
-// ─── State ──────────────────────────────────────────────────────
-let state = {
-  user: null, userRole: "viewer", userName: "",
-  page: "dashboard", loading: true, saving: false,
-  sidebarCollapsed: false,
-  data: {}, // keyed by docId
-  modal: null, // { type, ... }
-  selMonth: new Date().getMonth(), selYear: CUR_YEAR,
-  selTab: "tap",
+// พารามิเตอร์ อาคารวิจัยฯ
+const PARAMS_RESEARCH = [
+  {id:"ph",   label:"pH",          unit:"",      tanks:[{g:"EQ",ids:["EQ1","EQ2"]},{g:"Aeration",ids:["AE1","AE2","AE3","AE4"]},{g:"Effluent",ids:["EFF"]}]},
+  {id:"tds",  label:"TDS",         unit:"mg/L",  tanks:[{g:"EQ",ids:["EQ1","EQ2"]},{g:"Effluent",ids:["EFF"]}]},
+  {id:"cl",   label:"Cl",          unit:"mg/L",  tanks:[{g:"Effluent",ids:["EFF"]}]},
+  {id:"temp", label:"อุณหภูมิ",    unit:"°C",    tanks:[{g:"EQ",ids:["EQ1","EQ2"]},{g:"Aeration",ids:["AE1","AE2","AE3","AE4"]},{g:"Effluent",ids:["EFF"]}]},
+  {id:"sv30", label:"SV30",        unit:"ml/L",  tanks:[{g:"Aeration",ids:["AE1","AE2","AE3","AE4"]}]},
+  {id:"do",   label:"DO",          unit:"mg/L",  tanks:[{g:"Aeration",ids:["AE1","AE2","AE3","AE4"]}]},
+];
+// พารามิเตอร์ อาคาร สธ.
+const PARAMS_STH = [
+  {id:"ph",   label:"pH",  unit:"",      tanks:[{g:"EQ",ids:["EQ"]},{g:"Aeration",ids:["AE"]},{g:"Effluent",ids:["EFF"]}]},
+  {id:"tds",  label:"TDS", unit:"mg/L",  tanks:[{g:"EQ",ids:["EQ"]},{g:"Effluent",ids:["EFF"]}]},
+  {id:"cl",   label:"Cl",  unit:"mg/L",  tanks:[{g:"Effluent",ids:["EFF"]}]},
+  {id:"do",   label:"DO",  unit:"mg/L",  tanks:[{g:"Aeration",ids:["AE"]}]},
+];
+
+// ── State ──────────────────────────────────────────────────────
+let S = {
+  user:null, userRole:"viewer", userName:"",
+  page:"dashboard", loading:true, saving:false,
+  collapsed:false,
+  data:{},
+  modal:null,
+  selMonth:new Date().getMonth(), selYear:CY,
+  selTab:"", selParamTab:"ph",
+  chartMode:"daily", // daily | monthly
+  chartVisible:{water:true, waste:true, flow:true},
 };
 
-// ─── Firestore helpers ─────────────────────────────────────────
-async function fsGet(docId) {
-  const snap = await getDoc(doc(db, "water_data", docId));
-  return snap.exists() ? snap.data() : {};
-}
-async function fsSet(docId, data) {
-  await setDoc(doc(db, "water_data", docId), data, { merge: true });
-}
-async function getUserRole(uid) {
-  const snap = await getDoc(doc(db, "users", uid));
-  return snap.exists() ? snap.data() : { role: "viewer", name: "" };
-}
-async function setUserRole(uid, role, name) {
-  await setDoc(doc(db, "users", uid), { role, name });
+// ── Firestore ──────────────────────────────────────────────────
+async function fsGet(id){const s=await getDoc(doc(db,"water_data",id));return s.exists()?s.data():{};}
+async function fsSet(id,data){await setDoc(doc(db,"water_data",id),data,{merge:true});}
+async function getUserRole(uid){const s=await getDoc(doc(db,"users",uid));return s.exists()?s.data():{role:"viewer",name:""};}
+async function setUserRole(uid,role,name){await setDoc(doc(db,"users",uid),{role,name});}
+
+async function loadData(id){
+  if(S.data[id]!==undefined)return S.data[id];
+  const d=await fsGet(id);S.data[id]=d;return d;
 }
 
-// ─── Load page data ─────────────────────────────────────────────
-async function loadData(docId) {
-  if (state.data[docId] !== undefined) return state.data[docId];
-  setState({ loading: true });
-  const d = await fsGet(docId);
-  state.data[docId] = d;
-  setState({ loading: false });
-  return d;
-}
-async function saveData(docId, newData) {
-  state.data[docId] = { ...(state.data[docId] || {}), ...newData };
-  await fsSet(docId, newData);
+// ── Save debounce ──────────────────────────────────────────────
+let saveTimers={};
+function debouncedSave(id,data){
+  clearTimeout(saveTimers[id]);
+  saveTimers[id]=setTimeout(async()=>{
+    S.saving=true; render();
+    await fsSet(id,data);
+    S.saving=false; render();
+  },800);
 }
 
-// ─── Render engine ─────────────────────────────────────────────
-function setState(patch) {
-  Object.assign(state, patch);
-  render();
-}
-
-function render() {
-  const root = document.getElementById("app");
-  if (state.loading) {
-    root.innerHTML = `<div class="loading-overlay"><div class="spinner"></div>กำลังโหลด...</div>`;
-    return;
-  }
-  if (!state.user) { root.innerHTML = renderLogin(); bindLogin(); return; }
-  root.innerHTML = `
+// ── Render ─────────────────────────────────────────────────────
+function setState(p){Object.assign(S,p);render();}
+function render(){
+  const root=document.getElementById("app");
+  if(S.loading){root.innerHTML=`<div class="loading-overlay"><div class="spinner"></div>กำลังโหลด...</div>`;return;}
+  if(!S.user){root.innerHTML=renderLogin();bindLogin();return;}
+  root.innerHTML=`
     <div style="display:flex;min-height:100vh">
       ${renderSidebar()}
       <main class="main-content">${renderPage()}</main>
     </div>
-    ${state.modal ? renderModal() : ""}
-    ${state.saving ? `<div style="position:fixed;bottom:20px;right:24px;background:var(--blue);color:white;padding:8px 18px;border-radius:var(--radius);font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.2)">กำลังบันทึก...</div>` : ""}
+    ${S.modal?renderModal():""}
+    ${S.saving?`<div class="saving-toast">กำลังบันทึก...</div>`:""}
   `;
   bindEvents();
+  renderCharts();
 }
 
-// ─── LOGIN ─────────────────────────────────────────────────────
-function renderLogin() {
-  return `
-  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#e8f2fb,#e0f5f0)">
-    <div style="width:380px">
-      <div style="text-align:center;margin-bottom:28px">
-        <div style="width:56px;height:56px;background:var(--blue);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-        </div>
-        <h1 style="font-size:22px;font-weight:600;color:var(--gray5)">ระบบจัดการน้ำ</h1>
-        <p style="font-size:13px;color:var(--gray4);margin-top:4px">โรงพยาบาลสงขลานครินทร์</p>
+// ── LOGIN ──────────────────────────────────────────────────────
+function renderLogin(){
+  return `<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#e8f2fb,#e0f5f0)">
+  <div style="width:380px">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="width:56px;height:56px;background:var(--blue);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
       </div>
-      <div class="card">
-        <div id="login-err" style="display:none" class="alert alert-danger" style="margin-bottom:14px"></div>
-        <div style="margin-bottom:14px">
-          <label class="label">อีเมล</label>
-          <input class="input-field" id="login-email" type="email" placeholder="email@example.com" autofocus>
-        </div>
-        <div style="margin-bottom:20px">
-          <label class="label">รหัสผ่าน</label>
-          <input class="input-field" id="login-pass" type="password" placeholder="รหัสผ่าน">
-        </div>
-        <button class="btn btn-primary" id="btn-login" style="width:100%;padding:10px">เข้าสู่ระบบ</button>
-      </div>
+      <h1 style="font-size:22px;font-weight:600;color:var(--gray5)">ระบบจัดการน้ำ</h1>
+      <p style="font-size:13px;color:var(--gray4);margin-top:4px">โรงพยาบาลสงขลานครินทร์</p>
     </div>
-  </div>`;
+    <div class="card">
+      <div id="login-err" style="display:none;margin-bottom:14px" class="alert alert-danger"></div>
+      <div style="margin-bottom:14px"><label class="label">อีเมล</label><input class="input-field" id="login-email" type="email" placeholder="email@example.com" autofocus></div>
+      <div style="margin-bottom:20px"><label class="label">รหัสผ่าน</label><input class="input-field" id="login-pass" type="password" placeholder="รหัสผ่าน"></div>
+      <button class="btn btn-primary" id="btn-login" style="width:100%;padding:10px">เข้าสู่ระบบ</button>
+    </div>
+  </div></div>`;
 }
-function bindLogin() {
-  const doLogin = async () => {
-    const email = document.getElementById("login-email")?.value?.trim();
-    const pass = document.getElementById("login-pass")?.value;
-    const errEl = document.getElementById("login-err");
-    if (!email || !pass) { errEl.textContent = "กรุณากรอกอีเมลและรหัสผ่าน"; errEl.style.display="block"; return; }
-    try {
-      errEl.style.display = "none";
-      document.getElementById("btn-login").textContent = "กำลังเข้าสู่ระบบ...";
-      await signInWithEmailAndPassword(auth, email, pass);
-    } catch(e) {
-      errEl.textContent = "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
-      errEl.style.display = "block";
-      document.getElementById("btn-login").textContent = "เข้าสู่ระบบ";
-    }
+function bindLogin(){
+  const doLogin=async()=>{
+    const e=document.getElementById("login-email")?.value?.trim();
+    const p=document.getElementById("login-pass")?.value;
+    const err=document.getElementById("login-err");
+    if(!e||!p){err.textContent="กรุณากรอกอีเมลและรหัสผ่าน";err.style.display="block";return;}
+    try{err.style.display="none";document.getElementById("btn-login").textContent="กำลังเข้าสู่ระบบ...";
+      await signInWithEmailAndPassword(auth,e,p);}
+    catch{err.textContent="อีเมลหรือรหัสผ่านไม่ถูกต้อง";err.style.display="block";document.getElementById("btn-login").textContent="เข้าสู่ระบบ";}
   };
-  document.getElementById("btn-login")?.addEventListener("click", doLogin);
-  document.getElementById("login-pass")?.addEventListener("keydown", e => { if(e.key==="Enter") doLogin(); });
+  document.getElementById("btn-login")?.addEventListener("click",doLogin);
+  document.getElementById("login-pass")?.addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
 }
 
-// ─── SIDEBAR ────────────────────────────────────────────────────
-const NAV = [
-  {id:"dashboard",label:"ภาพรวม",icon:"M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z",section:null},
-  {id:"ww-research-daily",label:"รายงานประจำวัน",icon:"M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",section:"ระบบบำบัดน้ำเสีย อาคารวิจัยฯ"},
-  {id:"ww-research-summary",label:"สรุปรายเดือน",icon:"M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",section:null},
-  {id:"ww-sth-daily",label:"รายงานประจำวัน",icon:"M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",section:"ระบบบำบัดน้ำเสีย อาคาร สธ."},
-  {id:"ww-sth-summary",label:"สรุปรายเดือน",icon:"M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",section:null},
-  {id:"water-usage",label:"ปริมาณการใช้น้ำประปา",icon:"M12 3v1m0 16v1m8.66-10h-1M4.34 12h-1m15-6.36l-.7.7M6.36 17.66l-.7.7m12.02 0l-.7-.7M6.36 6.34l-.7-.7",section:"ระบบประปา"},
-  {id:"chlorine-start",label:"คลอรีน (ต้นทาง) รายวัน",icon:"M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2",section:null},
-  {id:"chlorine-end",label:"คลอรีน (ปลายทาง) รายสัปดาห์",icon:"M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2",section:null},
-  {id:"water-quality",label:"ค่า pH และ TDS",icon:"M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547",section:null},
-  {id:"water-analysis",label:"ผลการตรวจวิเคราะห์น้ำ",icon:"M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547",section:null},
-  ...(state.userRole==="admin" ? [{id:"manage-users",label:"จัดการผู้ใช้",icon:"M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0",section:"ผู้ดูแลระบบ"}] : [])
-];
-
-function renderSidebar() {
-  const c = state.sidebarCollapsed;
+// ── SIDEBAR ────────────────────────────────────────────────────
+function renderSidebar(){
+  const c=S.collapsed;
+  const isAdmin=S.userRole==="admin";
+  const ni=(id,label,icon,indent=0)=>`
+    <button class="nav-item${S.page===id?" active":""}" onclick="navTo('${id}')" title="${label}" style="padding-left:${12+indent*10}px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="flex-shrink:0"><path d="${icon}"/></svg>
+      ${!c?`<span style="font-size:${indent>0?12:13}px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${label}</span>`:""}
+    </button>`;
+  const ns=(label)=>!c?`<div class="nav-section">${label}</div>`:"";
+  const nss=(label)=>!c?`<div class="nav-subsection">${label}</div>`:"";
+  const ico={
+    home:"M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z",
+    daily:"M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+    chart:"M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+    param:"M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2",
+    water:"M12 3v1m0 16v1m8.66-10h-1M4.34 12h-1",
+    lab:"M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517",
+    user:"M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0",
+  };
   return `<div class="sidebar${c?" collapsed":""}">
-    <div style="padding:14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)">
+    <div style="padding:12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)">
       <div style="width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
       </div>
@@ -242,181 +236,303 @@ function renderSidebar() {
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
     </div>
-    <div style="flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:1px">
-      ${NAV.map((item,i) => `
-        ${item.section && !c ? `<div class="nav-section" style="padding-top:${i===0?6:14}px">${item.section}</div>` : ""}
-        <button class="nav-item${state.page===item.id?" active":""}" onclick="navTo('${item.id}')" title="${item.label}">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="flex-shrink:0"><path d="${item.icon}"/></svg>
-          ${!c?`<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.label}</span>`:""}
-        </button>
-      `).join("")}
+    <div style="flex:1;overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:1px">
+      ${ni("dashboard","ภาพรวม",ico.home)}
+      ${ns("ระบบบำบัดน้ำเสีย")}
+      ${nss("อาคารวิจัยฯ")}
+      ${ni("ww-research-daily","รายงานประจำวัน",ico.daily,1)}
+      ${ni("ww-research-param","พารามิเตอร์น้ำเสีย",ico.param,1)}
+      ${ni("ww-research-analysis","ผลวิเคราะห์น้ำ",ico.lab,1)}
+      ${ni("ww-research-summary","สรุปรายเดือน",ico.chart,1)}
+      ${nss("อาคารรัตนชีวรักษ์ (สธ.)")}
+      ${ni("ww-sth-daily","รายงานประจำวัน",ico.daily,1)}
+      ${ni("ww-sth-param","พารามิเตอร์น้ำเสีย",ico.param,1)}
+      ${ni("ww-sth-analysis","ผลวิเคราะห์น้ำ",ico.lab,1)}
+      ${ni("ww-sth-summary","สรุปรายเดือน",ico.chart,1)}
+      ${ns("ระบบประปา")}
+      ${ni("water-usage","ปริมาณการใช้น้ำประปา",ico.water)}
+      ${ni("chlorine-start","คลอรีน (ต้นทาง) รายวัน",ico.param)}
+      ${ni("chlorine-end","คลอรีน (ปลายทาง) รายสัปดาห์",ico.param)}
+      ${ni("water-quality","ค่า pH และ TDS น้ำประปา",ico.param)}
+      ${ni("water-analysis","ผลการตรวจวิเคราะห์น้ำ",ico.lab)}
+      ${isAdmin?ns("ผู้ดูแลระบบ"):""}
+      ${isAdmin?ni("manage-users","จัดการผู้ใช้",ico.user):""}
     </div>
-    ${!c?`<div style="padding:12px;border-top:1px solid var(--border)">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-        <div style="width:32px;height:32px;background:var(--blue-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--blue)">${(state.userName||"?")[0]}</div>
-        <div><div style="font-size:13px;font-weight:500">${state.userName}</div><span class="tag tag-${state.userRole}">${state.userRole==="admin"?"ผู้ดูแล":"ผู้ดู"}</span></div>
+    ${!c?`<div style="padding:10px;border-top:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="width:30px;height:30px;background:var(--blue-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--blue)">${(S.userName||"?")[0]}</div>
+        <div><div style="font-size:12px;font-weight:500">${S.userName}</div><span class="tag tag-${S.userRole}">${S.userRole==="admin"?"ผู้ดูแล":"ผู้ดู"}</span></div>
       </div>
-      <button class="btn btn-ghost" style="width:100%;font-size:13px" onclick="doLogout()">ออกจากระบบ</button>
+      <button class="btn btn-ghost" style="width:100%;font-size:12px" onclick="doLogout()">ออกจากระบบ</button>
     </div>`:""}
   </div>`;
 }
 
-// ─── PAGE ROUTER ────────────────────────────────────────────────
-function renderPage() {
-  switch(state.page) {
-    case "dashboard": return renderDashboard();
-    case "ww-research-daily": return renderWWDaily("research");
-    case "ww-research-summary": return renderWWSummary("research");
-    case "ww-sth-daily": return renderWWDaily("sth");
-    case "ww-sth-summary": return renderWWSummary("sth");
-    case "water-usage": return renderWaterUsage();
-    case "chlorine-start": return renderChlorineStart();
-    case "chlorine-end": return renderChlorineEnd();
-    case "water-quality": return renderWaterQuality();
-    case "water-analysis": return renderWaterAnalysis();
-    case "manage-users": return renderManageUsers();
+// ── PAGE ROUTER ────────────────────────────────────────────────
+function renderPage(){
+  switch(S.page){
+    case"dashboard": return renderDashboard();
+    case"ww-research-daily": return renderWWDaily("research");
+    case"ww-research-param": return renderWWParam("research");
+    case"ww-research-analysis": return renderWWAnalysis("research");
+    case"ww-research-summary": return renderWWSummary("research");
+    case"ww-sth-daily": return renderWWDaily("sth");
+    case"ww-sth-param": return renderWWParam("sth");
+    case"ww-sth-analysis": return renderWWAnalysis("sth");
+    case"ww-sth-summary": return renderWWSummary("sth");
+    case"water-usage": return renderWaterUsage();
+    case"chlorine-start": return renderChlorineStart();
+    case"chlorine-end": return renderChlorineEnd();
+    case"water-quality": return renderWaterQuality();
+    case"water-analysis": return renderWaterAnalysis();
+    case"manage-users": return renderManageUsers();
     default: return "<p>ไม่พบหน้า</p>";
   }
 }
 
-// ─── MONTH/YEAR SELECTOR ─────────────────────────────────────────
-function monthYearSel(idPrefix) {
-  return `<select class="input-field" style="width:130px" onchange="changeMonth(${idPrefix},this.value)">
-    ${MONTH_NAMES.map((m,i)=>`<option value="${i}"${state.selMonth===i?" selected":""}>${m}</option>`).join("")}
+// ── Helpers ────────────────────────────────────────────────────
+function mySel(){
+  return `<select class="input-field" style="width:130px" onchange="chMonth(this.value)">
+    ${MN.map((m,i)=>`<option value="${i}"${S.selMonth===i?" selected":""}>${m}</option>`).join("")}
   </select>
-  <select class="input-field" style="width:90px" onchange="changeYear(this.value)">
-    ${[2568,2569,2570].map(y=>`<option value="${y}"${state.selYear===y?" selected":""}>${y}</option>`).join("")}
+  <select class="input-field" style="width:86px" onchange="chYear(this.value)">
+    ${[2568,2569,2570].map(y=>`<option value="${y}"${S.selYear===y?" selected":""}>${y}</option>`).join("")}
   </select>`;
 }
 
-// ─── DASHBOARD ──────────────────────────────────────────────────
-function renderDashboard() {
-  const m = state.selMonth, y = state.selYear;
-  const rKey = `ww_research_${y}_${m}`, sKey = `ww_sth_${y}_${m}`;
-  const wKey = `water_usage_${y}_${m}`, cKey = `chlorine_start_${y}_${m}`;
-  const rd = state.data[rKey]||{}, sd = state.data[sKey]||{};
-  const wd = state.data[wKey]||{}, cd = state.data[cKey]||{};
-  const days = getDays(m);
+function avg(a,b){
+  const x=parseFloat(a),y=parseFloat(b);
+  const ok1=!isNaN(x)&&a!=="",ok2=!isNaN(y)&&b!=="";
+  if(ok1&&ok2)return((x+y)/2).toFixed(2);
+  if(ok1)return x.toFixed(2);
+  if(ok2)return y.toFixed(2);
+  return null;
+}
+
+// ── DASHBOARD ──────────────────────────────────────────────────
+function renderDashboard(){
+  const m=S.selMonth,y=S.selYear,days=getDays(m);
+  const rd=S.data[`ww_research_${y}_${m}`]||{};
+  const sd=S.data[`ww_sth_${y}_${m}`]||{};
+  const wd=S.data[`water_usage_${y}_${m}`]||{};
+  const cd=S.data[`chlorine_start_${y}_${m}`]||{};
   let tWW=0,tSth=0,tWater=0,clOk=0,clTotal=0;
   for(let d=1;d<=days;d++){
-    if(rd[d]?.ww_calc) tWW+=+rd[d].ww_calc||0;
-    if(sd[d]?.ww_calc) tSth+=+sd[d].ww_calc||0;
-    const wr=wd[d]; if(wr) tWater+=(+wr.hospital||0)+(+wr.khuan||0)+(+wr.dorm||0);
-    const cl=+cd[d]?.free_chlorine; if(!isNaN(cl)&&cl>0){clTotal++;if(cl>=0.2)clOk++;}
+    if(rd[d]?.waste)tWW+=+rd[d].waste||0;
+    if(sd[d]?.waste)tSth+=+sd[d].waste||0;
+    const wr=wd[d];if(wr)tWater+=(+wr.hospital||0)+(+wr.khuan||0)+(+wr.dorm||0);
+    const cl=+cd[d]?.free_chlorine;if(!isNaN(cl)&&cl>0){clTotal++;if(cl>=0.2)clOk++;}
   }
-  const clPct = clTotal>0 ? Math.round(clOk/clTotal*100) : null;
   return `<div>
     <h2 style="font-size:20px;font-weight:600;margin-bottom:4px">ภาพรวมระบบ</h2>
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap">
-      <p style="font-size:13px;color:var(--gray4)">${MONTH_NAMES[m]} ${y}</p>
-      ${monthYearSel("dash")}
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+      <p style="font-size:13px;color:var(--gray4)">${MN[m]} ${y}</p>${mySel()}
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px">
-      ${[
-        ["น้ำเสียเข้าระบบ (วิจัยฯ)", tWW.toFixed(1), "ลบ.ม.", "var(--blue)"],
-        ["น้ำเสียเข้าระบบ (สธ.)", tSth.toFixed(1), "ลบ.ม.", "var(--teal)"],
-        ["การใช้น้ำประปา", tWater.toLocaleString(), "ลบ.ม.", "var(--amber)"],
-        ["คลอรีนผ่านเกณฑ์", clPct!==null?`${clOk}/${clTotal} วัน`:"-", clPct!==null?`(${clPct}%)`:"", clPct!==null&&clPct<90?"var(--red)":"var(--green)"],
-      ].map(([l,v,u,c])=>`<div class="card"><div style="font-size:12px;color:var(--gray4);margin-bottom:6px">${l}</div><div style="font-size:26px;font-weight:600;color:${c}">${v}</div><div style="font-size:12px;color:var(--gray3)">${u}</div></div>`).join("")}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:20px">
+      ${[["น้ำเสีย (วิจัยฯ)",tWW.toFixed(1),"ลบ.ม.","var(--blue)"],
+         ["น้ำเสีย (สธ.)",tSth.toFixed(1),"ลบ.ม.","var(--teal)"],
+         ["การใช้น้ำประปา",tWater.toLocaleString(),"ลบ.ม.","var(--amber)"],
+         ["คลอรีนผ่านเกณฑ์",clTotal>0?`${clOk}/${clTotal} วัน`:"-",clTotal>0?`(${Math.round(clOk/clTotal*100)}%)`:"",clTotal>0&&clOk/clTotal<0.9?"var(--red)":"var(--green)"]
+        ].map(([l,v,u,c])=>`<div class="card"><div style="font-size:12px;color:var(--gray4);margin-bottom:6px">${l}</div><div style="font-size:24px;font-weight:600;color:${c}">${v}</div><div style="font-size:12px;color:var(--gray3)">${u}</div></div>`).join("")}
     </div>
     <div class="alert alert-info" style="font-size:13px">
-      <strong>ปีงบประมาณ ${y}</strong> — ข้อมูลแบบ Real-time ทุกคนเห็นพร้อมกัน | กรอกข้อมูลผ่านเมนูด้านซ้าย
+      <strong>ปีงบประมาณ ${y}</strong> — ข้อมูล Real-time ทุกคนเห็นพร้อมกัน | URL: <strong>water-mgmt-psu.web.app</strong>
     </div>
   </div>`;
 }
 
-// ─── WASTEWATER DAILY ───────────────────────────────────────────
-function renderWWDaily(building) {
-  const prefix = building==="research"?"ww_research":"ww_sth";
-  const title = building==="research"?"อาคารวิจัยฯ":"อาคารรัตนชีวรักษ์ (สธ.)";
-  const m = state.selMonth, y = state.selYear;
-  const docId = `${prefix}_${y}_${m}`;
-  const rows = state.data[docId] || {};
-  const days = getDays(m);
-  const isAdmin = state.userRole==="admin";
-  let tW=0,tWW=0,tFlow=0,tOut=0,tElec=0,tCost=0;
-  for(let d=1;d<=days;d++){const r=rows[d]||{};tW+=+r.water_usage||0;tWW+=+r.ww_calc||0;tFlow+=+r.ww_flow||0;tOut+=+r.waste_out||0;tElec+=+r.electricity||0;tCost+=+r.elec_cost||0;}
-  const inp = (d,f,w=85) => isAdmin
-    ? `<input type="number" class="tbl-input" style="width:${w}px" value="${rows[d]?.[f]??""}" onchange="updateWWRow('${docId}',${d},'${f}',this.value)" step="any">`
-    : `<span>${rows[d]?.[f]??"-"}</span>`;
-  const inpT = (d,f,w=110) => isAdmin
-    ? `<input type="text" class="tbl-input" style="width:${w}px" value="${rows[d]?.[f]??""}" onchange="updateWWRow('${docId}',${d},'${f}',this.value)">`
-    : `<span>${rows[d]?.[f]??"-"}</span>`;
+// ── WW DAILY ──────────────────────────────────────────────────
+function renderWWDaily(bldg){
+  const isR=bldg==="research";
+  const title=isR?"อาคารวิจัยฯ":"อาคารรัตนชีวรักษ์ (สธ.)";
+  const m=S.selMonth,y=S.selYear,docId=`ww_${bldg}_${y}_${m}`;
+  const rows=S.data[docId]||{},days=getDays(m),isAdmin=S.userRole==="admin";
+  let tW=0,tWaste=0,tFlow=0,tOut=0,tElec=0,tCost=0,tCl=0,tClCost=0;
+  for(let d=1;d<=days;d++){const r=rows[d]||{};
+    tW+=+r.water||0;tWaste+=+r.waste||0;tFlow+=+r.ww_flow||0;tOut+=+r.waste_out||0;
+    tElec+=+r.elec_kwh||0;tCost+=+r.elec_total||0;tCl+=+r.chlorine_l||0;tClCost+=+r.chlorine_cost||0;
+  }
+  const inp=(d,f,w=72,type="number")=>isAdmin
+    ?`<input type="${type}" class="tbl-input" style="width:${w}px" value="${rows[d]?.[f]??""}" onchange="updateWW('${docId}',${d},'${f}',this.value)" step="any">`
+    :`<span>${rows[d]?.[f]??"-"}</span>`;
+
+  // chart toggle buttons
+  const toggleBtn=(key,label,color)=>{
+    const on=S.chartVisible[key]!==false;
+    return `<button class="btn-toggle" style="background:${on?color+"22":"transparent"};border-color:${color};color:${on?color:color+"88"}" onclick="toggleChart('${key}')">${label}</button>`;
+  };
+
   return `<div>
     <div class="page-header">
-      <div><h2 style="font-size:20px;font-weight:600">รายงานประจำวัน — ${title}</h2><p style="font-size:13px;color:var(--gray4);margin-top:2px">ปีงบประมาณ ${y}</p></div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        ${monthYearSel("ww")}
-        <button class="btn btn-ghost" onclick="exportWW('${docId}','${title}')">Export CSV</button>
+      <div><h2 style="font-size:19px;font-weight:600">รายงานประจำวัน — ${title}</h2></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        ${mySel()}
+        <button class="btn btn-ghost btn-sm" onclick="exportWWDaily('${docId}','${title}')">Export CSV</button>
       </div>
     </div>
     <div class="stats-grid">
-      ${[["น้ำประปารวม",tW.toFixed(0),"ลบ.ม."],["น้ำเสียเข้า (×0.8)",tWW.toFixed(1),"ลบ.ม."],["Flowmeter",tFlow.toFixed(1),"ลบ.ม."],["ไฟฟ้า",tElec.toFixed(0),"kWh"],["ค่าไฟ",tCost.toFixed(2),"บาท"]].map(([l,v,u])=>`<div class="stat-card"><div class="stat-lbl">${l}</div><div class="stat-val" style="font-size:18px">${v}</div><div style="font-size:11px;color:var(--gray3)">${u}</div></div>`).join("")}
+      ${[["น้ำประปา",tW.toFixed(0),"ลบ.ม."],["น้ำเสีย",tWaste.toFixed(1),"ลบ.ม."],["Flowmeter",tFlow.toFixed(1),"ลบ.ม."],["น้ำทิ้ง",tOut.toFixed(1),"ลบ.ม."],["ไฟฟ้า",tElec.toFixed(0),"kW"],["ค่าไฟ",tCost.toFixed(2),"บาท"],["คลอรีน",tCl.toFixed(1),"ลิตร"],["ค่าคลอรีน",tClCost.toFixed(2),"บาท"]].map(([l,v,u])=>`<div class="stat-card"><div class="stat-lbl">${l}</div><div class="stat-val" style="font-size:17px">${v}</div><div style="font-size:11px;color:var(--gray3)">${u}</div></div>`).join("")}
     </div>
+
+    <!-- กราฟ -->
+    <div class="chart-container">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div style="font-size:14px;font-weight:600;color:var(--gray5)">กราฟปริมาณน้ำ</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          ${toggleBtn("water","น้ำประปา","#1a6fb5")}
+          ${toggleBtn("waste","น้ำเสีย","#0f7c63")}
+          ${toggleBtn("flow","Flowmeter","#e05c00")}
+          <select class="input-field" style="width:110px;padding:5px 8px;font-size:12px" onchange="S.chartMode=this.value;render()">
+            <option value="daily"${S.chartMode==="daily"?" selected":""}>รายวัน</option>
+            <option value="monthly"${S.chartMode==="monthly"?" selected":""}>รายเดือน</option>
+          </select>
+        </div>
+      </div>
+      <canvas id="chart-ww-main" height="80"></canvas>
+    </div>
+
     <div style="overflow-x:auto">
       <table class="table">
-        <thead><tr><th>วันที่</th><th>น้ำประปา</th><th style="background:#dbeeff">น้ำเสีย×0.8</th><th>Flowmeter</th><th>น้ำทิ้ง</th><th>ไฟฟ้า(kWh)</th><th>ค่าไฟ(บาท)</th><th>pH</th><th>DO</th><th>TDS</th><th>คลอรีน</th><th>หมายเหตุ</th></tr></thead>
+        <thead>
+          <tr>
+            <th rowspan="2">วันที่</th>
+            <th>น้ำประปา</th><th>น้ำเสีย</th><th>Flowmeter</th><th>น้ำทิ้ง</th>
+            <th>ไฟฟ้า</th><th>ค่าไฟ/หน่วย</th><th style="background:#dbeeff">ค่าไฟรวม</th>
+            <th>คลอรีน</th><th>ค่าคลอรีน</th>
+          </tr>
+          <tr>
+            <th>(ลบ.ม.)</th><th>(ลบ.ม.)</th><th>(ลบ.ม.)</th><th>(ลบ.ม.)</th>
+            <th>(kW)</th><th>(บาท/kW)</th><th style="background:#dbeeff">(บาท)</th>
+            <th>(ลิตร)</th><th>(บาท)</th>
+          </tr>
+        </thead>
         <tbody>
           ${Array.from({length:days},(_,i)=>i+1).map(d=>{
             const r=rows[d]||{};
-            const calcVal = r.ww_calc || (r.water_usage ? (r.water_usage*0.8).toFixed(2) : "-");
+            const elecTotal=r.elec_total||(r.elec_kwh&&r.elec_rate?(+r.elec_kwh*+r.elec_rate).toFixed(2):"");
             return `<tr>
               <td style="font-weight:500;color:var(--gray4)">${d}</td>
-              <td>${inp(d,"water_usage")}</td>
-              <td style="background:#f0f7ff;font-size:13px;font-weight:500;color:var(--blue)">${calcVal}</td>
-              <td>${inp(d,"ww_flow")}</td>
-              <td>${inp(d,"waste_out")}</td>
-              <td>${inp(d,"electricity")}</td>
-              <td>${inp(d,"elec_cost")}</td>
-              <td>${inp(d,"ph",70)}</td>
-              <td>${inp(d,"do_val",70)}</td>
-              <td>${inp(d,"tds",70)}</td>
-              <td>${inp(d,"chlorine",75)}</td>
-              <td>${inpT(d,"note")}</td>
+              <td>${inp(d,"water",72)}</td>
+              <td>${inp(d,"waste",72)}</td>
+              <td>${inp(d,"ww_flow",72)}</td>
+              <td>${inp(d,"waste_out",72)}</td>
+              <td>${inp(d,"elec_kwh",72)}</td>
+              <td>${inp(d,"elec_rate",72)}</td>
+              <td style="background:#f0f7ff;font-weight:500;color:var(--blue)">${isAdmin?`<input type="number" class="tbl-input" style="width:72px;background:#f0f7ff" value="${r.elec_total??""}" onchange="updateWW('${docId}',${d},'elec_total',this.value)" step="any">`:elecTotal||"-"}</td>
+              <td>${inp(d,"chlorine_l",72)}</td>
+              <td>${inp(d,"chlorine_cost",72)}</td>
             </tr>`;
           }).join("")}
+          <tr style="background:var(--gray0);font-weight:600">
+            <td>รวม</td>
+            <td>${tW.toFixed(0)}</td><td>${tWaste.toFixed(1)}</td><td>${tFlow.toFixed(1)}</td><td>${tOut.toFixed(1)}</td>
+            <td>${tElec.toFixed(0)}</td><td>-</td><td>${tCost.toFixed(2)}</td>
+            <td>${tCl.toFixed(1)}</td><td>${tClCost.toFixed(2)}</td>
+          </tr>
         </tbody>
       </table>
     </div>
-    ${!isAdmin?`<div class="alert alert-info" style="margin-top:16px">คุณมีสิทธิ์ดูข้อมูลเท่านั้น</div>`:""}
+    ${!isAdmin?`<div class="alert alert-info" style="margin-top:14px">คุณมีสิทธิ์ดูข้อมูลเท่านั้น</div>`:""}
   </div>`;
 }
 
-// ─── WASTEWATER SUMMARY ─────────────────────────────────────────
-function renderWWSummary(building) {
-  const prefix = building==="research"?"ww_research":"ww_sth";
-  const title = building==="research"?"อาคารวิจัยฯ":"อาคารรัตนชีวรักษ์ (สธ.)";
-  const y = state.selYear;
+// ── WW PARAM ──────────────────────────────────────────────────
+function renderWWParam(bldg){
+  const isR=bldg==="research";
+  const title=isR?"อาคารวิจัยฯ":"อาคารรัตนชีวรักษ์ (สธ.)";
+  const PARAMS=isR?PARAMS_RESEARCH:PARAMS_STH;
+  const m=S.selMonth,y=S.selYear;
+  const param=PARAMS.find(p=>p.id===S.selParamTab)||PARAMS[0];
+  if(!S.selParamTab||!PARAMS.find(p=>p.id===S.selParamTab))S.selParamTab=PARAMS[0].id;
+  const docId=`ww_param_${bldg}_${param.id}_${y}_${m}`;
+  const rows=S.data[docId]||{},days=getDays(m),isAdmin=S.userRole==="admin";
+
+  // collect all tank ids flat
+  const allTanks=param.tanks.flatMap(g=>g.ids.map(id=>({gLabel:g.g,id})));
+
+  const inp=(d,tid,shift)=>isAdmin
+    ?`<input type="number" class="tbl-input" style="width:62px" value="${rows[d]?.[tid]?.[shift]??""}" onchange="updateParam('${docId}',${d},'${tid}','${shift}',this.value)" step="any">`
+    :`<span style="font-size:12px">${rows[d]?.[tid]?.[shift]??"-"}</span>`;
+
   return `<div>
     <div class="page-header">
-      <div><h2 style="font-size:20px;font-weight:600">สรุปรายเดือน — ${title}</h2></div>
-      <div style="display:flex;gap:10px;align-items:center">
-        <select class="input-field" style="width:90px" onchange="changeYear(this.value)">
-          ${[2568,2569,2570].map(yr=>`<option value="${yr}"${y===yr?" selected":""}>${yr}</option>`).join("")}
+      <div><h2 style="font-size:19px;font-weight:600">พารามิเตอร์น้ำเสีย — ${title}</h2></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        ${mySel()}
+        <button class="btn btn-ghost btn-sm" onclick="exportParam('${docId}','${param.label}','${title}')">Export CSV</button>
+      </div>
+    </div>
+    <div class="tab-bar">
+      ${PARAMS.map(p=>`<button class="tab${S.selParamTab===p.id?" active":""}" onclick="chParamTab('${p.id}','${bldg}')">${p.label}${p.unit?" ("+p.unit+")":""}</button>`).join("")}
+    </div>
+
+    <!-- กราฟ -->
+    <div class="chart-container">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div style="font-size:14px;font-weight:600;color:var(--gray5)">กราฟ ${param.label}${param.unit?" ("+param.unit+")":""}</div>
+        <select class="input-field" style="width:110px;padding:5px 8px;font-size:12px" onchange="S.chartMode=this.value;render()">
+          <option value="daily"${S.chartMode==="daily"?" selected":""}>รายวัน</option>
+          <option value="monthly"${S.chartMode==="monthly"?" selected":""}>รายเดือน</option>
         </select>
-        <button class="btn btn-ghost" onclick="exportSummary('${prefix}','${title}')">Export CSV</button>
+      </div>
+      <canvas id="chart-param-main" height="80"></canvas>
+    </div>
+
+    <div style="overflow-x:auto">
+      <table class="table">
+        <thead>
+          <tr>
+            <th rowspan="3" style="min-width:48px">วันที่</th>
+            ${param.tanks.map(g=>`<th colspan="${g.ids.length*2}">${g.g}</th>`).join("")}
+          </tr>
+          <tr>
+            ${param.tanks.flatMap(g=>g.ids.map(id=>`<th colspan="2">${id}</th>`)).join("")}
+          </tr>
+          <tr>
+            ${allTanks.flatMap(()=>`<th>เช้า</th><th>บ่าย</th>`).join("")}
+          </tr>
+        </thead>
+        <tbody>
+          ${Array.from({length:days},(_,i)=>i+1).map(d=>`<tr>
+            <td style="font-weight:500;color:var(--gray4)">${d}</td>
+            ${allTanks.flatMap(t=>[
+              `<td>${inp(d,t.id,"m")}</td>`,
+              `<td>${inp(d,t.id,"a")}</td>`
+            ]).join("")}
+          </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ── WW ANALYSIS ────────────────────────────────────────────────
+function renderWWAnalysis(bldg){
+  const title=bldg==="research"?"อาคารวิจัยฯ":"อาคารรัตนชีวรักษ์ (สธ.)";
+  const docId=`ww_analysis_${bldg}`;
+  const records=S.data[docId]?.records||[];
+  const isAdmin=S.userRole==="admin";
+  return `<div>
+    <div class="page-header">
+      <div><h2 style="font-size:19px;font-weight:600">ผลวิเคราะห์น้ำ — ${title}</h2></div>
+      <div style="display:flex;gap:8px">
+        ${isAdmin?`<button class="btn btn-teal btn-sm" onclick="addAnalysis('${docId}')">+ เพิ่มผลการตรวจ</button>`:""}
+        <button class="btn btn-ghost btn-sm" onclick="exportAnalysis('${docId}','${title}')">Export CSV</button>
       </div>
     </div>
     <div style="overflow-x:auto">
       <table class="table">
-        <thead><tr><th>เดือน</th><th>น้ำประปา</th><th>น้ำเสีย ×0.8</th><th>Flowmeter</th><th>น้ำทิ้ง</th><th>ไฟฟ้า(kWh)</th><th>ค่าไฟ(บาท)</th><th>เฉลี่ย/วัน</th></tr></thead>
+        <thead><tr><th>วันที่</th><th>จุดเก็บตัวอย่าง</th><th>pH</th><th>BOD</th><th>SS</th><th>TKN</th><th>ผลการตรวจ</th><th>ผู้ตรวจ</th><th>หมายเหตุ</th>${isAdmin?"<th></th>":""}</tr></thead>
         <tbody>
-          ${MONTH_NAMES.map((mn,mi)=>{
-            const docId=`${prefix}_${y}_${mi}`;
-            const rows=state.data[docId]||{};
-            const days=getDays(mi);
-            let tW=0,tWW=0,tF=0,tO=0,tE=0,tC=0,cnt=0;
-            for(let d=1;d<=days;d++){const r=rows[d]||{};if(r.water_usage){tW+=+r.water_usage||0;tWW+=+r.ww_calc||0;tF+=+r.ww_flow||0;tO+=+r.waste_out||0;tE+=+r.electricity||0;tC+=+r.elec_cost||0;cnt++;}}
-            const empty=cnt===0;
-            return `<tr style="opacity:${empty?.45:1}">
-              <td style="font-weight:500">${mn}</td>
-              <td>${empty?"-":tW.toFixed(0)}</td>
-              <td>${empty?"-":tWW.toFixed(1)}</td>
-              <td>${empty?"-":tF.toFixed(1)}</td>
-              <td>${empty?"-":tO.toFixed(1)}</td>
-              <td>${empty?"-":tE.toFixed(0)}</td>
-              <td>${empty?"-":tC.toFixed(2)}</td>
-              <td>${empty?"-":(cnt>0?(tWW/cnt).toFixed(2):0)}</td>
+          ${records.length===0?`<tr><td colspan="${isAdmin?10:9}" style="text-align:center;color:var(--gray3);padding:24px">ยังไม่มีข้อมูล</td></tr>`:""}
+          ${records.map(r=>{
+            const inp2=(f,w=80,type="text")=>isAdmin?`<input type="${type}" class="tbl-input" style="width:${w}px" value="${r[f]??""}" onchange="updateAnalysisWW('${docId}','${r.id}','${f}',this.value)">`:`<span>${r[f]||"-"}</span>`;
+            return `<tr>
+              <td>${inp2("date",110,"date")}</td><td>${inp2("sample",120)}</td>
+              <td>${inp2("ph",65)}</td><td>${inp2("bod",65)}</td><td>${inp2("ss",65)}</td><td>${inp2("tkn",65)}</td>
+              <td>${isAdmin?`<select class="tbl-input" style="width:90px" onchange="updateAnalysisWW('${docId}','${r.id}','result',this.value)"><option value="">-</option><option value="ผ่าน"${r.result==="ผ่าน"?" selected":""}>ผ่าน</option><option value="ไม่ผ่าน"${r.result==="ไม่ผ่าน"?" selected":""}>ไม่ผ่าน</option></select>`:`<span class="${r.result==="ผ่าน"?"badge-ok":r.result==="ไม่ผ่าน"?"badge-bad":""}">${r.result||"-"}</span>`}</td>
+              <td>${inp2("inspector",90)}</td><td>${inp2("note",110)}</td>
+              ${isAdmin?`<td><button class="btn btn-danger btn-sm" onclick="delAnalysisWW('${docId}','${r.id}')">ลบ</button></td>`:""}
             </tr>`;
           }).join("")}
         </tbody>
@@ -425,26 +541,63 @@ function renderWWSummary(building) {
   </div>`;
 }
 
-// ─── WATER USAGE ────────────────────────────────────────────────
-function renderWaterUsage() {
-  const m=state.selMonth,y=state.selYear,docId=`water_usage_${y}_${m}`;
-  const rows=state.data[docId]||{},days=getDays(m),isAdmin=state.userRole==="admin";
-  let tH=0,tK=0,tD=0;
-  for(let d=1;d<=days;d++){const r=rows[d]||{};tH+=+r.hospital||0;tK+=+r.khuan||0;tD+=+r.dorm||0;}
-  const inp=(d,f)=>isAdmin
-    ?`<input type="number" class="tbl-input" style="width:100px" value="${rows[d]?.[f]??""}" onchange="updateField('${docId}',${d},'${f}',this.value)">`
-    :`<span>${rows[d]?.[f]??"-"}</span>`;
+// ── WW SUMMARY ────────────────────────────────────────────────
+function renderWWSummary(bldg){
+  const title=bldg==="research"?"อาคารวิจัยฯ":"อาคารรัตนชีวรักษ์ (สธ.)";
+  const y=S.selYear;
   return `<div>
     <div class="page-header">
-      <div><h2 style="font-size:20px;font-weight:600">ปริมาณการใช้น้ำประปาประจำวัน</h2><p style="font-size:13px;color:var(--gray4);margin-top:2px">มิเตอร์ 3 จุด</p></div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">${monthYearSel("wu")}<button class="btn btn-ghost" onclick="exportWaterUsage('${docId}')">Export CSV</button></div>
+      <div><h2 style="font-size:19px;font-weight:600">สรุปรายเดือน — ${title}</h2></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select class="input-field" style="width:86px" onchange="chYear(this.value)">
+          ${[2568,2569,2570].map(yr=>`<option value="${yr}"${y===yr?" selected":""}>${yr}</option>`).join("")}
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="exportWWSummary('${bldg}','${title}')">Export CSV</button>
+      </div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+    <div style="overflow-x:auto">
+      <table class="table">
+        <thead>
+          <tr><th>เดือน</th><th>น้ำประปา (ลบ.ม.)</th><th>น้ำเสีย (ลบ.ม.)</th><th>Flowmeter (ลบ.ม.)</th><th>น้ำทิ้ง (ลบ.ม.)</th><th>ไฟฟ้า (kW)</th><th>ค่าไฟ (บาท)</th><th>คลอรีน (ล.)</th><th>ค่าคลอรีน (บาท)</th><th>เฉลี่ยน้ำเสีย/วัน</th></tr>
+        </thead>
+        <tbody>
+          ${MN.map((mn,mi)=>{
+            const rows=S.data[`ww_${bldg}_${y}_${mi}`]||{},days=getDays(mi);
+            let tW=0,tWaste=0,tF=0,tO=0,tE=0,tC=0,tCl=0,tClC=0,cnt=0;
+            for(let d=1;d<=days;d++){const r=rows[d]||{};if(r.water){tW+=+r.water||0;tWaste+=+r.waste||0;tF+=+r.ww_flow||0;tO+=+r.waste_out||0;tE+=+r.elec_kwh||0;tC+=+r.elec_total||0;tCl+=+r.chlorine_l||0;tClC+=+r.chlorine_cost||0;cnt++;}}
+            const empty=cnt===0;
+            return `<tr style="opacity:${empty?.45:1}">
+              <td style="font-weight:500;text-align:left">${mn}</td>
+              <td>${empty?"-":tW.toFixed(0)}</td><td>${empty?"-":tWaste.toFixed(1)}</td><td>${empty?"-":tF.toFixed(1)}</td>
+              <td>${empty?"-":tO.toFixed(1)}</td><td>${empty?"-":tE.toFixed(0)}</td><td>${empty?"-":tC.toFixed(2)}</td>
+              <td>${empty?"-":tCl.toFixed(1)}</td><td>${empty?"-":tClC.toFixed(2)}</td>
+              <td>${empty?"-":(cnt>0?(tWaste/cnt).toFixed(2):0)}</td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ── WATER USAGE ───────────────────────────────────────────────
+function renderWaterUsage(){
+  const m=S.selMonth,y=S.selYear,docId=`water_usage_${y}_${m}`;
+  const rows=S.data[docId]||{},days=getDays(m),isAdmin=S.userRole==="admin";
+  let tH=0,tK=0,tD=0;
+  for(let d=1;d<=days;d++){const r=rows[d]||{};tH+=+r.hospital||0;tK+=+r.khuan||0;tD+=+r.dorm||0;}
+  const inp=(d,f)=>isAdmin?`<input type="number" class="tbl-input" style="width:90px" value="${rows[d]?.[f]??""}" onchange="updateField('${docId}',${d},'${f}',this.value)">`:`<span>${rows[d]?.[f]??"-"}</span>`;
+  return `<div>
+    <div class="page-header">
+      <div><h2 style="font-size:19px;font-weight:600">ปริมาณการใช้น้ำประปาประจำวัน</h2><p style="font-size:13px;color:var(--gray4);margin-top:2px">มิเตอร์ 3 จุด: ร.พ. / ควนมดแดง / หอพัก</p></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">${mySel()}<button class="btn btn-ghost btn-sm" onclick="exportWaterUsage('${docId}')">Export CSV</button></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
       ${[["โรงพยาบาล",tH],["ควนมดแดง",tK],["หอพัก",tD],["รวม",tH+tK+tD]].map(([l,v])=>`<div class="stat-card"><div class="stat-lbl">${l}</div><div class="stat-val" style="font-size:18px">${v.toLocaleString()}</div><div style="font-size:11px;color:var(--gray3)">ลบ.ม.</div></div>`).join("")}
     </div>
     <div style="overflow-x:auto">
       <table class="table">
-        <thead><tr><th>วันที่</th><th>โรงพยาบาล</th><th>ควนมดแดง</th><th>หอพัก</th><th>รวม</th></tr></thead>
+        <thead><tr><th>วันที่</th><th>โรงพยาบาล (ลบ.ม.)</th><th>ควนมดแดง (ลบ.ม.)</th><th>หอพัก (ลบ.ม.)</th><th>รวม (ลบ.ม.)</th></tr></thead>
         <tbody>
           ${Array.from({length:days},(_,i)=>i+1).map(d=>{
             const r=rows[d]||{},tot=(+r.hospital||0)+(+r.khuan||0)+(+r.dorm||0);
@@ -456,21 +609,19 @@ function renderWaterUsage() {
   </div>`;
 }
 
-// ─── CHLORINE START ─────────────────────────────────────────────
-function renderChlorineStart() {
-  const m=state.selMonth,y=state.selYear,docId=`chlorine_start_${y}_${m}`;
-  const rows=state.data[docId]||{},days=getDays(m),isAdmin=state.userRole==="admin";
+// ── CHLORINE START ────────────────────────────────────────────
+function renderChlorineStart(){
+  const m=S.selMonth,y=S.selYear,docId=`chlorine_start_${y}_${m}`;
+  const rows=S.data[docId]||{},days=getDays(m),isAdmin=S.userRole==="admin";
   let ok=0,tot=0;
   for(let d=1;d<=days;d++){const cl=+rows[d]?.free_chlorine;if(!isNaN(cl)&&cl>0){tot++;if(cl>=0.2)ok++;}}
-  const inp=(d,f,w=90,type="number")=>isAdmin
-    ?`<input type="${type}" class="tbl-input" style="width:${w}px" value="${rows[d]?.[f]??""}" onchange="updateField('${docId}',${d},'${f}',this.value)" step="any">`
-    :`<span>${rows[d]?.[f]??"-"}</span>`;
+  const inp=(d,f,w=80,type="number")=>isAdmin?`<input type="${type}" class="tbl-input" style="width:${w}px" value="${rows[d]?.[f]??""}" onchange="updateField('${docId}',${d},'${f}',this.value)" step="any">`:`<span>${rows[d]?.[f]??"-"}</span>`;
   return `<div>
     <div class="page-header">
-      <div><h2 style="font-size:20px;font-weight:600">ตรวจวัดคลอรีน (ต้นทาง) ประจำวัน</h2><p style="font-size:13px;color:var(--gray4);margin-top:2px">เกณฑ์: คลอรีน ≥ 0.2 มก./ล, TDS ≤ 500 มก./ล</p></div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">${monthYearSel("cs")}<button class="btn btn-ghost" onclick="exportChlorineStart('${docId}')">Export CSV</button></div>
+      <div><h2 style="font-size:19px;font-weight:600">คลอรีน (ต้นทาง) ประจำวัน</h2><p style="font-size:13px;color:var(--gray4);margin-top:2px">เกณฑ์: คลอรีน ≥ 0.2 มก./ล, TDS ≤ 500 มก./ล</p></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">${mySel()}<button class="btn btn-ghost btn-sm" onclick="exportChlorineStart('${docId}')">Export CSV</button></div>
     </div>
-    ${tot>0?`<div class="alert ${ok/tot>=0.9?"alert-success":"alert-warn"}" style="margin-bottom:16px">คลอรีนผ่านเกณฑ์ ${ok}/${tot} วัน (${Math.round(ok/tot*100)}%)</div>`:""}
+    ${tot>0?`<div class="alert ${ok/tot>=0.9?"alert-success":"alert-warn"}" style="margin-bottom:14px">คลอรีนผ่านเกณฑ์ ${ok}/${tot} วัน (${Math.round(ok/tot*100)}%)</div>`:""}
     <div style="overflow-x:auto">
       <table class="table">
         <thead><tr><th>วันที่</th><th>เวลา</th><th>คลอรีนอิสระ (มก./ล)</th><th>TDS (มก./ล)</th><th>หมายเหตุ</th><th>ผู้ตรวจ</th></tr></thead>
@@ -478,15 +629,12 @@ function renderChlorineStart() {
           ${Array.from({length:days},(_,i)=>i+1).map(d=>{
             const r=rows[d]||{};
             const cl=+r.free_chlorine,tds=+r.tds;
-            const clClass=!isNaN(cl)&&cl>0?(cl>=0.2?"badge-ok":"badge-bad"):"";
-            const tdsClass=!isNaN(tds)&&tds>0?(tds<=500?"badge-ok":"badge-bad"):"";
             return `<tr>
               <td style="font-weight:500;color:var(--gray4)">${d}</td>
-              <td>${inp(d,"time",80,"text")}</td>
-              <td>${isAdmin?inp(d,"free_chlorine",95):`<span class="${clClass}">${r.free_chlorine??"-"}</span>`}</td>
-              <td>${isAdmin?inp(d,"tds",95):`<span class="${tdsClass}">${r.tds??"-"}</span>`}</td>
-              <td>${inp(d,"note",130,"text")}</td>
-              <td>${inp(d,"inspector",100,"text")}</td>
+              <td>${inp(d,"time",70,"text")}</td>
+              <td>${isAdmin?inp(d,"free_chlorine",85):`<span class="${!isNaN(cl)&&cl>0?(cl>=0.2?"badge-ok":"badge-bad"):""}">${r.free_chlorine??"-"}</span>`}</td>
+              <td>${isAdmin?inp(d,"tds",85):`<span class="${!isNaN(tds)&&tds>0?(tds<=500?"badge-ok":"badge-bad"):""}">${r.tds??"-"}</span>`}</td>
+              <td>${inp(d,"note",130,"text")}</td><td>${inp(d,"inspector",90,"text")}</td>
             </tr>`;
           }).join("")}
         </tbody>
@@ -495,71 +643,64 @@ function renderChlorineStart() {
   </div>`;
 }
 
-// ─── CHLORINE END ───────────────────────────────────────────────
-function renderChlorineEnd() {
-  const m=state.selMonth,y=state.selYear,docId=`chlorine_end_${y}_${m}`;
-  const data=state.data[docId]||{},isAdmin=state.userRole==="admin";
+// ── CHLORINE END ──────────────────────────────────────────────
+function renderChlorineEnd(){
+  const m=S.selMonth,y=S.selYear,docId=`chlorine_end_${y}_${m}`;
+  const data=S.data[docId]||{},isAdmin=S.userRole==="admin";
   return `<div>
     <div class="page-header">
-      <div><h2 style="font-size:20px;font-weight:600">ตรวจวัดคลอรีน (ปลายทาง) รายสัปดาห์</h2><p style="font-size:13px;color:var(--gray4);margin-top:2px">ตรวจทุกวันพุธ — เกณฑ์คลอรีน ≥ 0.2 มก./ล</p></div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">${monthYearSel("ce")}<button class="btn btn-ghost" onclick="exportChlorineEnd('${docId}')">Export CSV</button></div>
+      <div><h2 style="font-size:19px;font-weight:600">คลอรีน (ปลายทาง) รายสัปดาห์</h2><p style="font-size:13px;color:var(--gray4);margin-top:2px">ตรวจทุกวันพุธ — เกณฑ์คลอรีน ≥ 0.2 มก./ล</p></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">${mySel()}<button class="btn btn-ghost btn-sm" onclick="exportChlorineEnd('${docId}')">Export CSV</button></div>
     </div>
     ${[1,2,3,4,5].map(w=>`
-      <div class="card" style="margin-bottom:16px">
-        <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
-          <span style="font-weight:600;font-size:15px;color:var(--blue)">สัปดาห์ที่ ${w}</span>
-          ${isAdmin?`<input type="date" class="input-field" style="width:160px" value="${data[w]?.date||""}" onchange="updateWeekDate('${docId}',${w},this.value)">`
-            :(data[w]?.date?`<span style="font-size:13px;color:var(--gray4)">วันที่ตรวจ: ${data[w].date}</span>`:"")}
+      <div class="card" style="margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px">
+          <span style="font-weight:600;font-size:14px;color:var(--blue)">สัปดาห์ที่ ${w}</span>
+          ${isAdmin?`<input type="date" class="input-field" style="width:150px" value="${data[w]?.date||""}" onchange="updateWeekDate('${docId}',${w},this.value)">`:(data[w]?.date?`<span style="font-size:12px;color:var(--gray4)">วันที่ตรวจ: ${data[w].date}</span>`:"")}
         </div>
         <div style="overflow-x:auto">
           <table class="table">
             <thead><tr><th>อาคาร</th><th>จุดเก็บ</th><th>สารเคมี(L/hr)</th><th>ClO₂(มก./ล)</th><th>คลอรีนอิสระ</th><th>TDS(มก./ล)</th></tr></thead>
             <tbody>
-              ${BUILDINGS_END.map(b=>{
+              ${BLDG_END.map(b=>{
                 const r=data[w]?.[b]||{};
                 const cl=+r.free_chlorine;
                 const clClass=!isNaN(cl)&&cl>0?(cl>=0.2?"badge-ok":"badge-bad"):"";
-                const inp=(f,w2=80)=>isAdmin
-                  ?`<input type="number" class="tbl-input" style="width:${w2}px" value="${r[f]??""}" onchange="updateEndRow('${docId}',${w},'${b}','${f}',this.value)" step="any">`
-                  :`<span>${r[f]??"-"}</span>`;
+                const inp2=(f,w2=75)=>isAdmin?`<input type="number" class="tbl-input" style="width:${w2}px" value="${r[f]??""}" onchange="updateEndRow('${docId}',${w},'${b}','${f}',this.value)" step="any">`:`<span>${r[f]??"-"}</span>`;
                 return `<tr>
-                  <td style="font-weight:500;font-size:13px">${b}</td>
-                  <td style="font-size:12px;color:var(--gray4)">${SPOTS[b]}</td>
-                  <td>${inp("chemical")}</td><td>${inp("clo2")}</td>
-                  <td>${isAdmin?inp("free_chlorine",90):`<span class="${clClass}">${r.free_chlorine??"-"}</span>`}</td>
-                  <td>${inp("tds")}</td>
+                  <td style="font-weight:500;font-size:12px;text-align:left">${b}</td>
+                  <td style="font-size:11px;color:var(--gray4)">${SPOTS[b]}</td>
+                  <td>${inp2("chemical")}</td><td>${inp2("clo2")}</td>
+                  <td>${isAdmin?inp2("free_chlorine",85):`<span class="${clClass}">${r.free_chlorine??"-"}</span>`}</td>
+                  <td>${inp2("tds")}</td>
                 </tr>`;
               }).join("")}
             </tbody>
           </table>
         </div>
-      </div>
-    `).join("")}
+      </div>`).join("")}
   </div>`;
 }
 
-// ─── WATER QUALITY ──────────────────────────────────────────────
-function renderWaterQuality() {
-  const m=state.selMonth,y=state.selYear,docId=`water_quality_${y}_${m}`;
-  const rows=state.data[docId]||{},days=getDays(m),isAdmin=state.userRole==="admin";
-  const inp=(d,s,f,w=85)=>isAdmin
-    ?`<input type="number" class="tbl-input" style="width:${w}px" value="${rows[d]?.[s]?.[f]??""}" onchange="updateQualityRow('${docId}',${d},'${s}','${f}',this.value)" step="any">`
-    :`<span>${rows[d]?.[s]?.[f]??"-"}</span>`;
+// ── WATER QUALITY ─────────────────────────────────────────────
+function renderWaterQuality(){
+  const m=S.selMonth,y=S.selYear,docId=`water_quality_${y}_${m}`;
+  const rows=S.data[docId]||{},days=getDays(m),isAdmin=S.userRole==="admin";
+  const inp=(d,shift,f,w=80)=>isAdmin?`<input type="number" class="tbl-input" style="width:${w}px" value="${rows[d]?.[shift]?.[f]??""}" onchange="updateQuality('${docId}',${d},'${shift}','${f}',this.value)" step="any">`:`<span>${rows[d]?.[shift]?.[f]??"-"}</span>`;
   return `<div>
     <div class="page-header">
-      <div><h2 style="font-size:20px;font-weight:600">ค่า pH และ TDS ในน้ำประปา</h2><p style="font-size:13px;color:var(--gray4);margin-top:2px">บันทึกรายวัน (เช้า–บ่าย)</p></div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">${monthYearSel("wq")}<button class="btn btn-ghost" onclick="exportWaterQuality('${docId}')">Export CSV</button></div>
+      <div><h2 style="font-size:19px;font-weight:600">ค่า pH และ TDS ในน้ำประปา</h2></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">${mySel()}<button class="btn btn-ghost btn-sm" onclick="exportWQ('${docId}')">Export CSV</button></div>
     </div>
     <div style="overflow-x:auto">
       <table class="table">
         <thead><tr><th>วันที่</th><th>เวลา</th><th>pH</th><th>TDS (มก./ล)</th></tr></thead>
         <tbody>
           ${Array.from({length:days},(_,i)=>i+1).flatMap(d=>
-            ["morning","afternoon"].map(s=>`<tr>
-              ${s==="morning"?`<td rowspan="2" style="font-weight:500;color:var(--gray4);vertical-align:middle">${d}</td>`:""}
-              <td style="color:var(--gray4);font-size:13px">${s==="morning"?"เช้า":"บ่าย"}</td>
-              <td>${inp(d,s,"ph")}</td>
-              <td>${inp(d,s,"tds")}</td>
+            ["morning","afternoon"].map(sh=>`<tr>
+              ${sh==="morning"?`<td rowspan="2" style="font-weight:500;color:var(--gray4);vertical-align:middle">${d}</td>`:""}
+              <td style="color:var(--gray4);font-size:12px">${sh==="morning"?"เช้า":"บ่าย"}</td>
+              <td>${inp(d,sh,"ph")}</td><td>${inp(d,sh,"tds")}</td>
             </tr>`)
           ).join("")}
         </tbody>
@@ -568,296 +709,405 @@ function renderWaterQuality() {
   </div>`;
 }
 
-// ─── WATER ANALYSIS ─────────────────────────────────────────────
-function renderWaterAnalysis() {
-  const TYPES = [{id:"tap",label:"น้ำประปา (ทุก 6 เดือน)"},{id:"ro",label:"น้ำดื่ม RO (ทุก 3 เดือน)"},{id:"dialysis",label:"น้ำฟอกไต (ทุก 3 เดือน)"}];
-  const tab = state.selTab||"tap";
-  const docId = `water_analysis_${tab}`;
-  const records = state.data[docId]?.records || [];
-  const isAdmin = state.userRole==="admin";
-  const inp=(id,f,w=90,type="text")=>isAdmin
-    ?`<input type="${type}" class="tbl-input" style="width:${w}px" value="${records.find(r=>r.id===id)?.[f]??""}" onchange="updateAnalysisRow('${docId}','${id}','${f}',this.value)">`
-    :`<span>${records.find(r=>r.id===id)?.[f]||"-"}</span>`;
+// ── WATER ANALYSIS ────────────────────────────────────────────
+function renderWaterAnalysis(){
+  const TYPES=[{id:"tap",label:"น้ำประปา (ทุก 6 เดือน)"},{id:"ro",label:"น้ำดื่ม RO (ทุก 3 เดือน)"},{id:"dialysis",label:"น้ำฟอกไต (ทุก 3 เดือน)"}];
+  const tab=S.selTab||"tap";
+  const docId=`water_analysis_${tab}`;
+  const records=S.data[docId]?.records||[];
+  const isAdmin=S.userRole==="admin";
   return `<div>
     <div class="page-header">
-      <div><h2 style="font-size:20px;font-weight:600">ผลการตรวจวิเคราะห์น้ำ</h2></div>
-      <div style="display:flex;gap:10px">
-        ${isAdmin?`<button class="btn btn-teal" onclick="addAnalysisRow('${docId}')">+ เพิ่มผลการตรวจ</button>`:""}
-        <button class="btn btn-ghost" onclick="exportAnalysis('${docId}','${tab}')">Export CSV</button>
+      <div><h2 style="font-size:19px;font-weight:600">ผลการตรวจวิเคราะห์น้ำ</h2></div>
+      <div style="display:flex;gap:8px">
+        ${isAdmin?`<button class="btn btn-teal btn-sm" onclick="addAnalysis('${docId}')">+ เพิ่มผลการตรวจ</button>`:""}
+        <button class="btn btn-ghost btn-sm" onclick="exportAnalysis('${docId}','${tab}')">Export CSV</button>
       </div>
     </div>
-    <div class="tab-bar">${TYPES.map(t=>`<button class="tab${tab===t.id?" active":""}" onclick="changeTab('${t.id}')">${t.label}</button>`).join("")}</div>
+    <div class="tab-bar">${TYPES.map(t=>`<button class="tab${tab===t.id?" active":""}" onclick="chTab('${t.id}')">${t.label}</button>`).join("")}</div>
     <div style="overflow-x:auto">
       <table class="table">
-        <thead><tr><th>วันที่</th><th>จุดเก็บตัวอย่าง</th><th>pH</th><th>TDS</th><th>แบคทีเรีย</th><th>ผลการตรวจ</th><th>ผู้ตรวจ</th><th>หมายเหตุ</th>${isAdmin?"<th></th>":""}</tr></thead>
+        <thead><tr><th>วันที่</th><th>จุดเก็บ</th><th>pH</th><th>TDS</th><th>แบคทีเรีย</th><th>ผลการตรวจ</th><th>ผู้ตรวจ</th><th>หมายเหตุ</th>${isAdmin?"<th></th>":""}</tr></thead>
         <tbody>
-          ${records.length===0?`<tr><td colspan="${isAdmin?9:8}" style="text-align:center;color:var(--gray3);padding:24px">ยังไม่มีข้อมูล${isAdmin?" — กดปุ่ม + เพิ่มผลการตรวจ":""}</td></tr>`:""}
-          ${records.map(r=>`<tr>
-            <td>${inp(r.id,"date",120,"date")}</td>
-            <td>${inp(r.id,"sample_point",130)}</td>
-            <td>${inp(r.id,"ph",70)}</td>
-            <td>${inp(r.id,"tds",80)}</td>
-            <td>${inp(r.id,"bacteria",100)}</td>
-            <td>${isAdmin?`<select class="tbl-input" style="width:100px" onchange="updateAnalysisRow('${docId}','${r.id}','result',this.value)"><option value="">-</option><option value="ผ่าน"${r.result==="ผ่าน"?" selected":""}>ผ่าน</option><option value="ไม่ผ่าน"${r.result==="ไม่ผ่าน"?" selected":""}>ไม่ผ่าน</option></select>`:`<span class="${r.result==="ผ่าน"?"badge-ok":r.result==="ไม่ผ่าน"?"badge-bad":""}">${r.result||"-"}</span>`}</td>
-            <td>${inp(r.id,"inspector",100)}</td>
-            <td>${inp(r.id,"note",120)}</td>
-            ${isAdmin?`<td><button class="btn btn-danger btn-sm" onclick="deleteAnalysisRow('${docId}','${r.id}')">ลบ</button></td>`:""}
-          </tr>`).join("")}
+          ${records.length===0?`<tr><td colspan="${isAdmin?9:8}" style="text-align:center;color:var(--gray3);padding:24px">ยังไม่มีข้อมูล</td></tr>`:""}
+          ${records.map(r=>{
+            const i2=(f,w=80,type="text")=>isAdmin?`<input type="${type}" class="tbl-input" style="width:${w}px" value="${r[f]??""}" onchange="updateAnalysisField('${docId}','${r.id}','${f}',this.value)">`:`<span>${r[f]||"-"}</span>`;
+            return `<tr>
+              <td>${i2("date",110,"date")}</td><td>${i2("sample_point",120)}</td>
+              <td>${i2("ph",65)}</td><td>${i2("tds",65)}</td><td>${i2("bacteria",90)}</td>
+              <td>${isAdmin?`<select class="tbl-input" style="width:90px" onchange="updateAnalysisField('${docId}','${r.id}','result',this.value)"><option value="">-</option><option value="ผ่าน"${r.result==="ผ่าน"?" selected":""}>ผ่าน</option><option value="ไม่ผ่าน"${r.result==="ไม่ผ่าน"?" selected":""}>ไม่ผ่าน</option></select>`:`<span class="${r.result==="ผ่าน"?"badge-ok":r.result==="ไม่ผ่าน"?"badge-bad":""}">${r.result||"-"}</span>`}</td>
+              <td>${i2("inspector",90)}</td><td>${i2("note",110)}</td>
+              ${isAdmin?`<td><button class="btn btn-danger btn-sm" onclick="delAnalysis('${docId}','${r.id}')">ลบ</button></td>`:""}
+            </tr>`;
+          }).join("")}
         </tbody>
       </table>
     </div>
   </div>`;
 }
 
-// ─── MANAGE USERS ───────────────────────────────────────────────
-function renderManageUsers() {
+// ── MANAGE USERS ──────────────────────────────────────────────
+function renderManageUsers(){
   return `<div>
     <div class="page-header">
-      <div><h2 style="font-size:20px;font-weight:600">จัดการผู้ใช้งาน</h2><p style="font-size:13px;color:var(--gray4);margin-top:2px">สร้างบัญชีสำหรับทีม 10 คน</p></div>
-      <button class="btn btn-teal" onclick="showAddUser()">+ เพิ่มผู้ใช้ใหม่</button>
+      <div><h2 style="font-size:19px;font-weight:600">จัดการผู้ใช้งาน</h2></div>
+      <button class="btn btn-teal btn-sm" onclick="showAddUser()">+ เพิ่มผู้ใช้ใหม่</button>
     </div>
-    <div class="alert alert-info" style="margin-bottom:20px;font-size:13px">
-      <strong>วิธีใช้งาน:</strong> กด "+ เพิ่มผู้ใช้ใหม่" เพื่อสร้างบัญชี email/password สำหรับแต่ละคนในทีม แล้วแจ้ง email และรหัสผ่านให้พวกเขา Login ได้เลยที่หน้าแรก
+    <div class="alert alert-info" style="margin-bottom:16px;font-size:13px">
+      กด "+ เพิ่มผู้ใช้ใหม่" เพื่อสร้างบัญชี email/password สำหรับทีมงาน แล้วแจ้ง email และรหัสผ่านให้พวกเขา Login ได้เลย
     </div>
     <div class="card">
-      <p style="font-size:14px;color:var(--gray4)">รายชื่อผู้ใช้จะแสดงใน Firebase Console → Authentication → Users ครับ</p>
-      <div style="margin-top:12px;display:flex;gap:10px">
-        <a href="https://console.firebase.google.com/project/water-mgmt-psu/authentication/users" target="_blank" class="btn btn-primary" style="font-size:13px;text-decoration:none">เปิด Firebase Console →</a>
-      </div>
+      <p style="font-size:13px;color:var(--gray4)">ดูรายชื่อผู้ใช้ทั้งหมดได้ที่ Firebase Console → Authentication → Users</p>
+      <div style="margin-top:10px"><a href="https://console.firebase.google.com/project/water-mgmt-psu/authentication/users" target="_blank" class="btn btn-primary btn-sm" style="text-decoration:none">เปิด Firebase Console →</a></div>
     </div>
   </div>`;
 }
 
-// ─── MODAL: ADD USER ────────────────────────────────────────────
-function renderModal() {
-  if (state.modal?.type === "addUser") {
-    return `<div class="modal-overlay">
-      <div class="modal">
-        <h3 style="font-size:17px;font-weight:600;margin-bottom:20px">เพิ่มผู้ใช้ใหม่</h3>
-        <div id="modal-err" style="display:none" class="alert alert-danger" style="margin-bottom:14px"></div>
-        <div style="margin-bottom:14px"><label class="label">ชื่อ-นามสกุล</label><input class="input-field" id="new-name" placeholder="ชื่อพนักงาน"></div>
-        <div style="margin-bottom:14px"><label class="label">Email</label><input class="input-field" id="new-email" type="email" placeholder="name@psu.ac.th"></div>
-        <div style="margin-bottom:14px"><label class="label">รหัสผ่าน (อย่างน้อย 6 ตัว)</label><input class="input-field" id="new-pass" type="password" placeholder="รหัสผ่าน"></div>
-        <div style="margin-bottom:20px"><label class="label">สิทธิ์</label>
-          <select class="input-field" id="new-role">
-            <option value="viewer">Viewer — ดูได้อย่างเดียว</option>
-            <option value="admin">Admin — กรอก/แก้ไขได้</option>
-          </select>
-        </div>
-        <div style="display:flex;gap:10px;justify-content:flex-end">
-          <button class="btn btn-ghost" onclick="closeModal()">ยกเลิก</button>
-          <button class="btn btn-teal" id="btn-create-user">สร้างบัญชี</button>
-        </div>
+// ── MODAL ─────────────────────────────────────────────────────
+function renderModal(){
+  if(S.modal?.type==="addUser"){
+    return `<div class="modal-overlay"><div class="modal">
+      <h3 style="font-size:16px;font-weight:600;margin-bottom:18px">เพิ่มผู้ใช้ใหม่</h3>
+      <div id="modal-err" style="display:none;margin-bottom:12px" class="alert alert-danger"></div>
+      <div style="margin-bottom:12px"><label class="label">ชื่อ-นามสกุล</label><input class="input-field" id="new-name" placeholder="ชื่อ"></div>
+      <div style="margin-bottom:12px"><label class="label">Email</label><input class="input-field" id="new-email" type="email" placeholder="email@psu.ac.th"></div>
+      <div style="margin-bottom:12px"><label class="label">รหัสผ่าน (อย่างน้อย 6 ตัว)</label><input class="input-field" id="new-pass" type="password"></div>
+      <div style="margin-bottom:18px"><label class="label">สิทธิ์</label>
+        <select class="input-field" id="new-role"><option value="viewer">Viewer — ดูได้อย่างเดียว</option><option value="admin">Admin — กรอก/แก้ไขได้</option></select>
       </div>
-    </div>`;
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="closeModal()">ยกเลิก</button>
+        <button class="btn btn-teal" id="btn-create-user">สร้างบัญชี</button>
+      </div>
+    </div></div>`;
   }
   return "";
 }
 
-// ─── Global handlers ────────────────────────────────────────────
-window.toggleSidebar = () => setState({ sidebarCollapsed: !state.sidebarCollapsed });
-window.navTo = async (page) => {
-  setState({ page, loading: true });
-  await preloadPageData(page);
-  setState({ loading: false });
-};
-window.doLogout = () => signOut(auth);
-window.changeMonth = (_, val) => { setState({ selMonth: +val, loading: true }); preloadPageData(state.page).then(()=>setState({loading:false})); };
-window.changeYear = (val) => { setState({ selYear: +val, loading: true }); preloadPageData(state.page).then(()=>setState({loading:false})); };
-window.changeTab = (tab) => { state.selTab = tab; loadData(`water_analysis_${tab}`).then(()=>render()); };
-window.closeModal = () => setState({ modal: null });
-window.showAddUser = () => setState({ modal: { type: "addUser" } });
+// ── CHARTS ────────────────────────────────────────────────────
+let chartInstances={};
+function destroyChart(id){if(chartInstances[id]){chartInstances[id].destroy();delete chartInstances[id];}}
 
-// Field updates — debounced save
-let saveTimers = {};
-function debouncedSave(docId, data) {
-  clearTimeout(saveTimers[docId]);
-  saveTimers[docId] = setTimeout(async () => {
-    setState({ saving: true });
-    await fsSet(docId, data);
-    setState({ saving: false });
-  }, 800);
-}
-
-window.updateWWRow = (docId, d, field, val) => {
-  if (!state.data[docId]) state.data[docId] = {};
-  if (!state.data[docId][d]) state.data[docId][d] = {};
-  state.data[docId][d][field] = val;
-  if (field === "water_usage") state.data[docId][d].ww_calc = val ? (parseFloat(val)*0.8).toFixed(2) : "";
-  debouncedSave(docId, state.data[docId]);
-  // re-render only the calc cell
-  const calcCells = document.querySelectorAll(`[data-ww-calc-${d}]`);
-  const calcVal = state.data[docId][d].ww_calc || "-";
-  calcCells.forEach(el => el.textContent = calcVal);
-};
-
-window.updateField = (docId, d, field, val) => {
-  if (!state.data[docId]) state.data[docId] = {};
-  if (!state.data[docId][d]) state.data[docId][d] = {};
-  state.data[docId][d][field] = val;
-  debouncedSave(docId, state.data[docId]);
-};
-
-window.updateEndRow = (docId, week, bldg, field, val) => {
-  if (!state.data[docId]) state.data[docId] = {};
-  if (!state.data[docId][week]) state.data[docId][week] = {};
-  if (!state.data[docId][week][bldg]) state.data[docId][week][bldg] = {};
-  state.data[docId][week][bldg][field] = val;
-  debouncedSave(docId, state.data[docId]);
-};
-
-window.updateWeekDate = (docId, week, val) => {
-  if (!state.data[docId]) state.data[docId] = {};
-  if (!state.data[docId][week]) state.data[docId][week] = {};
-  state.data[docId][week].date = val;
-  debouncedSave(docId, state.data[docId]);
-};
-
-window.updateQualityRow = (docId, d, shift, field, val) => {
-  if (!state.data[docId]) state.data[docId] = {};
-  if (!state.data[docId][d]) state.data[docId][d] = {};
-  if (!state.data[docId][d][shift]) state.data[docId][d][shift] = {};
-  state.data[docId][d][shift][field] = val;
-  debouncedSave(docId, state.data[docId]);
-};
-
-window.addAnalysisRow = async (docId) => {
-  if (!state.data[docId]) state.data[docId] = { records: [] };
-  if (!state.data[docId].records) state.data[docId].records = [];
-  const newRec = { id: Date.now().toString(), date:"", sample_point:"", ph:"", tds:"", bacteria:"", result:"", inspector:"", note:"" };
-  state.data[docId].records.push(newRec);
-  await fsSet(docId, state.data[docId]);
-  render();
-};
-
-window.deleteAnalysisRow = async (docId, id) => {
-  if (!confirm("ลบรายการนี้?")) return;
-  state.data[docId].records = state.data[docId].records.filter(r => r.id !== id);
-  await fsSet(docId, state.data[docId]);
-  render();
-};
-
-window.updateAnalysisRow = (docId, id, field, val) => {
-  const rec = state.data[docId]?.records?.find(r => r.id === id);
-  if (rec) { rec[field] = val; debouncedSave(docId, state.data[docId]); }
-};
-
-// ─── Create user ─────────────────────────────────────────────────
-window.bindCreateUser = () => {
-  document.getElementById("btn-create-user")?.addEventListener("click", async () => {
-    const name = document.getElementById("new-name")?.value?.trim();
-    const email = document.getElementById("new-email")?.value?.trim();
-    const pass = document.getElementById("new-pass")?.value;
-    const role = document.getElementById("new-role")?.value;
-    const errEl = document.getElementById("modal-err");
-    if (!name || !email || !pass) { errEl.textContent="กรุณากรอกข้อมูลให้ครบ"; errEl.style.display="block"; return; }
-    try {
-      const cred = await createUserWithEmailAndPassword(auth, email, pass);
-      await setUserRole(cred.user.uid, role, name);
-      // sign back in as current user
-      setState({ modal: null });
-      alert(`สร้างบัญชี ${name} (${email}) เรียบร้อยแล้วครับ`);
-    } catch(e) {
-      errEl.textContent = e.code === "auth/email-already-in-use" ? "Email นี้มีอยู่แล้ว" : e.message;
-      errEl.style.display = "block";
-    }
-  });
-};
-
-// ─── Export CSV ──────────────────────────────────────────────────
-function dlCsv(filename, headers, rows) {
-  const bom = "\uFEFF";
-  const lines = [headers.join(","), ...rows.map(r => r.map(c => `"${c??""}"` ).join(","))];
-  const blob = new Blob([bom+lines.join("\n")], {type:"text/csv;charset=utf-8;"});
-  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
-}
-window.exportWW = (docId, title) => {
-  const rows = state.data[docId]||{}, m=state.selMonth, y=state.selYear, days=getDays(m);
-  dlCsv(`น้ำเสีย_${title}_${MONTH_NAMES[m]}_${y}.csv`,
-    ["วันที่","น้ำประปา","น้ำเสีย×0.8","Flowmeter","น้ำทิ้ง","ไฟฟ้า(kWh)","ค่าไฟ(บาท)","pH","DO","TDS","คลอรีน","หมายเหตุ"],
-    Array.from({length:days},(_,i)=>i+1).map(d=>{const r=rows[d]||{};return[d,r.water_usage,r.ww_calc,r.ww_flow,r.waste_out,r.electricity,r.elec_cost,r.ph,r.do_val,r.tds,r.chlorine,r.note];}));
-};
-window.exportSummary = (prefix, title) => {
-  const y=state.selYear;
-  dlCsv(`สรุป_${title}_${y}.csv`,["เดือน","น้ำประปา","น้ำเสีย×0.8","Flowmeter","น้ำทิ้ง","ไฟฟ้า","ค่าไฟ","เฉลี่ย/วัน"],
-    MONTH_NAMES.map((mn,mi)=>{
-      const rows=state.data[`${prefix}_${y}_${mi}`]||{},days=getDays(mi);
-      let tW=0,tWW=0,tF=0,tO=0,tE=0,tC=0,cnt=0;
-      for(let d=1;d<=days;d++){const r=rows[d]||{};if(r.water_usage){tW+=+r.water_usage;tWW+=+r.ww_calc||0;tF+=+r.ww_flow||0;tO+=+r.waste_out||0;tE+=+r.electricity||0;tC+=+r.elec_cost||0;cnt++;}}
-      return[mn,tW.toFixed(0),tWW.toFixed(1),tF.toFixed(1),tO.toFixed(1),tE.toFixed(0),tC.toFixed(2),cnt>0?(tWW/cnt).toFixed(2):0];
-    }));
-};
-window.exportWaterUsage = (docId) => {
-  const rows=state.data[docId]||{},m=state.selMonth,y=state.selYear,days=getDays(m);
-  dlCsv(`น้ำประปา_${MONTH_NAMES[m]}_${y}.csv`,["วันที่","โรงพยาบาล","ควนมดแดง","หอพัก","รวม"],
-    Array.from({length:days},(_,i)=>i+1).map(d=>{const r=rows[d]||{};const t=(+r.hospital||0)+(+r.khuan||0)+(+r.dorm||0);return[d,r.hospital||0,r.khuan||0,r.dorm||0,t];}));
-};
-window.exportChlorineStart = (docId) => {
-  const rows=state.data[docId]||{},m=state.selMonth,y=state.selYear,days=getDays(m);
-  dlCsv(`คลอรีนต้นทาง_${MONTH_NAMES[m]}_${y}.csv`,["วันที่","เวลา","คลอรีนอิสระ","TDS","หมายเหตุ","ผู้ตรวจ"],
-    Array.from({length:days},(_,i)=>i+1).map(d=>{const r=rows[d]||{};return[d,r.time,r.free_chlorine,r.tds,r.note,r.inspector];}));
-};
-window.exportChlorineEnd = (docId) => {
-  const data=state.data[docId]||{};
-  const rows=[];
-  [1,2,3,4,5].forEach(w=>BUILDINGS_END.forEach(b=>{const r=data[w]?.[b]||{};rows.push([`สัปดาห์${w}`,b,SPOTS[b],r.chemical,r.clo2,r.free_chlorine,r.tds]);}));
-  dlCsv(`คลอรีนปลายทาง_${MONTH_NAMES[state.selMonth]}_${state.selYear}.csv`,["สัปดาห์","อาคาร","จุดเก็บ","สารเคมี","ClO2","คลอรีนอิสระ","TDS"],rows);
-};
-window.exportWaterQuality = (docId) => {
-  const rows=state.data[docId]||{},m=state.selMonth,y=state.selYear,days=getDays(m);
-  const out=[];
-  Array.from({length:days},(_,i)=>i+1).forEach(d=>["morning","afternoon"].forEach(s=>{const r=rows[d]?.[s]||{};out.push([d,s==="morning"?"เช้า":"บ่าย",r.ph,r.tds]);}));
-  dlCsv(`pH_TDS_${MONTH_NAMES[m]}_${y}.csv`,["วันที่","เวลา","pH","TDS"],out);
-};
-window.exportAnalysis = (docId, tab) => {
-  const records=(state.data[docId]?.records)||[];
-  dlCsv(`ผลวิเคราะห์น้ำ_${tab}.csv`,["วันที่","จุดเก็บ","pH","TDS","แบคทีเรีย","ผลการตรวจ","ผู้ตรวจ","หมายเหตุ"],
-    records.map(r=>[r.date,r.sample_point,r.ph,r.tds,r.bacteria,r.result,r.inspector,r.note]));
-};
-
-// ─── Preload data for page ───────────────────────────────────────
-async function preloadPageData(page) {
-  const m=state.selMonth,y=state.selYear;
-  const toLoad = [];
-  if(page==="dashboard"){
-    toLoad.push(`ww_research_${y}_${m}`,`ww_sth_${y}_${m}`,`water_usage_${y}_${m}`,`chlorine_start_${y}_${m}`);
-  } else if(page==="ww-research-daily") toLoad.push(`ww_research_${y}_${m}`);
-  else if(page==="ww-research-summary") { for(let i=0;i<12;i++) toLoad.push(`ww_research_${y}_${i}`); }
-  else if(page==="ww-sth-daily") toLoad.push(`ww_sth_${y}_${m}`);
-  else if(page==="ww-sth-summary") { for(let i=0;i<12;i++) toLoad.push(`ww_sth_${y}_${i}`); }
-  else if(page==="water-usage") toLoad.push(`water_usage_${y}_${m}`);
-  else if(page==="chlorine-start") toLoad.push(`chlorine_start_${y}_${m}`);
-  else if(page==="chlorine-end") toLoad.push(`chlorine_end_${y}_${m}`);
-  else if(page==="water-quality") toLoad.push(`water_quality_${y}_${m}`);
-  else if(page==="water-analysis") toLoad.push(`water_analysis_${state.selTab||"tap"}`);
-  const missing = toLoad.filter(id => state.data[id] === undefined);
-  if(missing.length > 0) {
-    const results = await Promise.all(missing.map(id => fsGet(id)));
-    missing.forEach((id,i) => { state.data[id] = results[i]; });
+function renderCharts(){
+  const m=S.selMonth,y=S.selYear;
+  if(S.page==="ww-research-daily"||S.page==="ww-sth-daily"){
+    const bldg=S.page==="ww-research-daily"?"research":"sth";
+    const docId=`ww_${bldg}_${y}_${m}`;
+    const rows=S.data[docId]||{};
+    setTimeout(()=>drawWWChart(rows,m,y,bldg),50);
+  }
+  if(S.page==="ww-research-param"||S.page==="ww-sth-param"){
+    const bldg=S.page==="ww-research-param"?"research":"sth";
+    const PARAMS=bldg==="research"?PARAMS_RESEARCH:PARAMS_STH;
+    const param=PARAMS.find(p=>p.id===S.selParamTab)||PARAMS[0];
+    const docId=`ww_param_${bldg}_${param.id}_${y}_${m}`;
+    const rows=S.data[docId]||{};
+    setTimeout(()=>drawParamChart(rows,param,m,y,bldg),50);
   }
 }
 
-// ─── Bind events after render ────────────────────────────────────
-function bindEvents() {
-  if(state.modal?.type === "addUser") bindCreateUser();
+function drawWWChart(rows,m,y,bldg){
+  destroyChart("chart-ww-main");
+  const canvas=document.getElementById("chart-ww-main");
+  if(!canvas)return;
+  let labels,datasets;
+  if(S.chartMode==="daily"){
+    const days=getDays(m);
+    labels=Array.from({length:days},(_,i)=>i+1);
+    const waterData=labels.map(d=>+rows[d]?.water||null);
+    const wasteData=labels.map(d=>+rows[d]?.waste||null);
+    const flowData=labels.map(d=>+rows[d]?.ww_flow||null);
+    datasets=[
+      {label:"น้ำประปา",data:waterData,borderColor:"#1a6fb5",backgroundColor:"#1a6fb522",tension:0.3,hidden:!S.chartVisible.water},
+      {label:"น้ำเสีย",data:wasteData,borderColor:"#0f7c63",backgroundColor:"#0f7c6322",tension:0.3,hidden:!S.chartVisible.waste},
+      {label:"Flowmeter",data:flowData,borderColor:"#e05c00",backgroundColor:"#e05c0022",tension:0.3,hidden:!S.chartVisible.flow},
+    ];
+  } else {
+    labels=MS;
+    const waterData=MS.map((_,mi)=>{const r2=S.data[`ww_${bldg}_${y}_${mi}`]||{};let t=0,c=0;for(let d=1;d<=getDays(mi);d++){if(r2[d]?.water){t+=+r2[d].water||0;c++;}}return c>0?+(t/c).toFixed(1):null;});
+    const wasteData=MS.map((_,mi)=>{const r2=S.data[`ww_${bldg}_${y}_${mi}`]||{};let t=0,c=0;for(let d=1;d<=getDays(mi);d++){if(r2[d]?.waste){t+=+r2[d].waste||0;c++;}}return c>0?+(t/c).toFixed(1):null;});
+    const flowData=MS.map((_,mi)=>{const r2=S.data[`ww_${bldg}_${y}_${mi}`]||{};let t=0,c=0;for(let d=1;d<=getDays(mi);d++){if(r2[d]?.ww_flow){t+=+r2[d].ww_flow||0;c++;}}return c>0?+(t/c).toFixed(1):null;});
+    datasets=[
+      {label:"น้ำประปา (เฉลี่ย/วัน)",data:waterData,borderColor:"#1a6fb5",backgroundColor:"#1a6fb522",tension:0.3,hidden:!S.chartVisible.water},
+      {label:"น้ำเสีย (เฉลี่ย/วัน)",data:wasteData,borderColor:"#0f7c63",backgroundColor:"#0f7c6322",tension:0.3,hidden:!S.chartVisible.waste},
+      {label:"Flowmeter (เฉลี่ย/วัน)",data:flowData,borderColor:"#e05c00",backgroundColor:"#e05c0022",tension:0.3,hidden:!S.chartVisible.flow},
+    ];
+  }
+  chartInstances["chart-ww-main"]=new Chart(canvas,{type:"line",data:{labels,datasets},options:{responsive:true,interaction:{mode:"index",intersect:false},plugins:{legend:{position:"top"}},scales:{y:{beginAtZero:true,title:{display:true,text:"ลบ.ม."}}}}});
 }
 
-// ─── Auth listener ───────────────────────────────────────────────
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    setState({ loading: true });
-    const profile = await getUserRole(user.uid);
-    state.user = user;
-    state.userRole = profile.role || "viewer";
-    state.userName = profile.name || user.email;
-    await preloadPageData("dashboard");
-    setState({ loading: false });
+function drawParamChart(rows,param,m,y,bldg){
+  destroyChart("chart-param-main");
+  const canvas=document.getElementById("chart-param-main");
+  if(!canvas)return;
+  const allTanks=param.tanks.flatMap(g=>g.ids.map(id=>id));
+  let labels,datasets;
+  if(S.chartMode==="daily"){
+    const days=getDays(m);
+    labels=Array.from({length:days},(_,i)=>i+1);
+    datasets=allTanks.map((tid,ci)=>({
+      label:tid,
+      data:labels.map(d=>{
+        const a=avg(rows[d]?.[tid]?.m,rows[d]?.[tid]?.a);
+        return a!==null?+a:null;
+      }),
+      borderColor:CHART_COLORS[ci%CHART_COLORS.length],
+      backgroundColor:CHART_COLORS[ci%CHART_COLORS.length]+"22",
+      tension:0.3,spanGaps:true,
+    }));
   } else {
-    state.user = null;
-    state.userRole = "viewer";
-    state.userName = "";
-    state.data = {};
-    setState({ loading: false });
+    labels=MS;
+    datasets=allTanks.map((tid,ci)=>({
+      label:tid,
+      data:MS.map((_,mi)=>{
+        const r2=S.data[`ww_param_${bldg}_${param.id}_${y}_${mi}`]||{};
+        const days2=getDays(mi);
+        let sum=0,cnt=0;
+        for(let d=1;d<=days2;d++){
+          const a=avg(r2[d]?.[tid]?.m,r2[d]?.[tid]?.a);
+          if(a!==null){sum+=+a;cnt++;}
+        }
+        return cnt>0?+(sum/cnt).toFixed(2):null;
+      }),
+      borderColor:CHART_COLORS[ci%CHART_COLORS.length],
+      backgroundColor:CHART_COLORS[ci%CHART_COLORS.length]+"22",
+      tension:0.3,spanGaps:true,
+    }));
+  }
+  chartInstances["chart-param-main"]=new Chart(canvas,{type:"line",data:{labels,datasets},options:{responsive:true,interaction:{mode:"index",intersect:false},plugins:{legend:{position:"top"}},scales:{y:{beginAtZero:false,title:{display:true,text:param.unit||param.label}}}}});
+}
+
+// ── Event handlers ────────────────────────────────────────────
+window.toggleSidebar=()=>setState({collapsed:!S.collapsed});
+window.navTo=async(page)=>{setState({page,loading:true});await preload(page);setState({loading:false});};
+window.doLogout=()=>signOut(auth);
+window.chMonth=(v)=>{S.selMonth=+v;preload(S.page).then(()=>setState({}));};
+window.chYear=(v)=>{S.selYear=+v;preload(S.page).then(()=>setState({}));};
+window.chTab=(t)=>{S.selTab=t;loadData(`water_analysis_${t}`).then(()=>render());};
+window.chParamTab=(t,bldg)=>{
+  S.selParamTab=t;
+  const PARAMS=bldg==="research"?PARAMS_RESEARCH:PARAMS_STH;
+  const param=PARAMS.find(p=>p.id===t)||PARAMS[0];
+  loadData(`ww_param_${bldg}_${t}_${S.selYear}_${S.selMonth}`).then(()=>render());
+};
+window.closeModal=()=>setState({modal:null});
+window.showAddUser=()=>setState({modal:{type:"addUser"}});
+window.toggleChart=(key)=>{S.chartVisible[key]=!S.chartVisible[key];render();};
+
+window.updateWW=(docId,d,f,v)=>{
+  if(!S.data[docId])S.data[docId]={};
+  if(!S.data[docId][d])S.data[docId][d]={};
+  S.data[docId][d][f]=v;
+  // auto calc elec_total
+  if(f==="elec_kwh"||f==="elec_rate"){
+    const r=S.data[docId][d];
+    if(r.elec_kwh&&r.elec_rate)r.elec_total=(+r.elec_kwh*+r.elec_rate).toFixed(2);
+  }
+  debouncedSave(docId,S.data[docId]);
+};
+window.updateParam=(docId,d,tid,shift,v)=>{
+  if(!S.data[docId])S.data[docId]={};
+  if(!S.data[docId][d])S.data[docId][d]={};
+  if(!S.data[docId][d][tid])S.data[docId][d][tid]={};
+  S.data[docId][d][tid][shift]=v;
+  debouncedSave(docId,S.data[docId]);
+};
+window.updateField=(docId,d,f,v)=>{
+  if(!S.data[docId])S.data[docId]={};
+  if(!S.data[docId][d])S.data[docId][d]={};
+  S.data[docId][d][f]=v;
+  debouncedSave(docId,S.data[docId]);
+};
+window.updateEndRow=(docId,week,b,f,v)=>{
+  if(!S.data[docId])S.data[docId]={};
+  if(!S.data[docId][week])S.data[docId][week]={};
+  if(!S.data[docId][week][b])S.data[docId][week][b]={};
+  S.data[docId][week][b][f]=v;
+  debouncedSave(docId,S.data[docId]);
+};
+window.updateWeekDate=(docId,week,v)=>{
+  if(!S.data[docId])S.data[docId]={};
+  if(!S.data[docId][week])S.data[docId][week]={};
+  S.data[docId][week].date=v;
+  debouncedSave(docId,S.data[docId]);
+};
+window.updateQuality=(docId,d,shift,f,v)=>{
+  if(!S.data[docId])S.data[docId]={};
+  if(!S.data[docId][d])S.data[docId][d]={};
+  if(!S.data[docId][d][shift])S.data[docId][d][shift]={};
+  S.data[docId][d][shift][f]=v;
+  debouncedSave(docId,S.data[docId]);
+};
+
+// Analysis helpers
+async function addAnalysisGeneric(docId){
+  if(!S.data[docId])S.data[docId]={records:[]};
+  if(!S.data[docId].records)S.data[docId].records=[];
+  S.data[docId].records.push({id:Date.now().toString(),...Object.fromEntries(["date","sample","ph","bod","ss","tkn","result","inspector","note"].map(k=>[k,""]))});
+  await fsSet(docId,S.data[docId]);render();
+}
+window.addAnalysis=async(docId)=>{
+  if(!S.data[docId])S.data[docId]={records:[]};
+  if(!S.data[docId].records)S.data[docId].records=[];
+  S.data[docId].records.push({id:Date.now().toString(),date:"",sample_point:"",ph:"",tds:"",bacteria:"",result:"",inspector:"",note:""});
+  await fsSet(docId,S.data[docId]);render();
+};
+window.delAnalysis=async(docId,id)=>{
+  if(!confirm("ลบรายการนี้?"))return;
+  S.data[docId].records=S.data[docId].records.filter(r=>r.id!==id);
+  await fsSet(docId,S.data[docId]);render();
+};
+window.updateAnalysisField=(docId,id,f,v)=>{
+  const r=S.data[docId]?.records?.find(r=>r.id===id);
+  if(r){r[f]=v;debouncedSave(docId,S.data[docId]);}
+};
+window.addAnalysisWW=async(docId)=>addAnalysisGeneric(docId);
+window.addAnalysisWW=async(docId)=>{
+  if(!S.data[docId])S.data[docId]={records:[]};
+  if(!S.data[docId].records)S.data[docId].records=[];
+  S.data[docId].records.push({id:Date.now().toString(),date:"",sample:"",ph:"",bod:"",ss:"",tkn:"",result:"",inspector:"",note:""});
+  await fsSet(docId,S.data[docId]);render();
+};
+window.delAnalysisWW=async(docId,id)=>{
+  if(!confirm("ลบรายการนี้?"))return;
+  S.data[docId].records=S.data[docId].records.filter(r=>r.id!==id);
+  await fsSet(docId,S.data[docId]);render();
+};
+window.updateAnalysisWW=(docId,id,f,v)=>{
+  const r=S.data[docId]?.records?.find(r=>r.id===id);
+  if(r){r[f]=v;debouncedSave(docId,S.data[docId]);}
+};
+
+// Create user
+function bindEvents(){
+  if(S.modal?.type==="addUser"){
+    document.getElementById("btn-create-user")?.addEventListener("click",async()=>{
+      const name=document.getElementById("new-name")?.value?.trim();
+      const email=document.getElementById("new-email")?.value?.trim();
+      const pass=document.getElementById("new-pass")?.value;
+      const role=document.getElementById("new-role")?.value;
+      const err=document.getElementById("modal-err");
+      if(!name||!email||!pass){err.textContent="กรุณากรอกข้อมูลให้ครบ";err.style.display="block";return;}
+      try{
+        const cred=await createUserWithEmailAndPassword(auth,email,pass);
+        await setUserRole(cred.user.uid,role,name);
+        setState({modal:null});alert(`สร้างบัญชี ${name} (${email}) เรียบร้อยแล้ว`);
+      }catch(e){err.textContent=e.code==="auth/email-already-in-use"?"Email นี้มีอยู่แล้ว":e.message;err.style.display="block";}
+    });
+  }
+}
+
+// ── CSV exports ───────────────────────────────────────────────
+function dlCsv(filename,headers,rows){
+  const bom="\uFEFF";
+  const lines=[headers.join(","),...rows.map(r=>r.map(c=>`"${c??""}"`).join(","))];
+  const blob=new Blob([bom+lines.join("\n")],{type:"text/csv;charset=utf-8;"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=filename;a.click();
+}
+window.exportWWDaily=(docId,title)=>{
+  const rows=S.data[docId]||{},m=S.selMonth,y=S.selYear,days=getDays(m);
+  dlCsv(`น้ำเสีย_${title}_${MN[m]}_${y}.csv`,
+    ["วันที่","น้ำประปา","น้ำเสีย","Flowmeter","น้ำทิ้ง","ไฟฟ้า(kW)","ค่าไฟ/หน่วย","ค่าไฟรวม","คลอรีน(ล.)","ค่าคลอรีน"],
+    Array.from({length:days},(_,i)=>i+1).map(d=>{const r=rows[d]||{};return[d,r.water,r.waste,r.ww_flow,r.waste_out,r.elec_kwh,r.elec_rate,r.elec_total,r.chlorine_l,r.chlorine_cost];}));
+};
+window.exportParam=(docId,label,title)=>{
+  const rows=S.data[docId]||{},m=S.selMonth,y=S.selYear,days=getDays(m);
+  const bldg=S.page.includes("research")?"research":"sth";
+  const PARAMS=bldg==="research"?PARAMS_RESEARCH:PARAMS_STH;
+  const param=PARAMS.find(p=>p.id===S.selParamTab)||PARAMS[0];
+  const allTanks=param.tanks.flatMap(g=>g.ids.map(id=>id));
+  const headers=["วันที่",...allTanks.flatMap(t=>[`${t}(เช้า)`,`${t}(บ่าย)`,"เฉลี่ย"])];
+  const dataRows=Array.from({length:days},(_,i)=>i+1).map(d=>[d,...allTanks.flatMap(t=>[rows[d]?.[t]?.m||"",rows[d]?.[t]?.a||"",avg(rows[d]?.[t]?.m,rows[d]?.[t]?.a)||""])]);
+  dlCsv(`param_${label}_${title}_${MN[m]}_${y}.csv`,headers,dataRows);
+};
+window.exportWWSummary=(bldg,title)=>{
+  const y=S.selYear;
+  dlCsv(`สรุป_${title}_${y}.csv`,
+    ["เดือน","น้ำประปา","น้ำเสีย","Flowmeter","น้ำทิ้ง","ไฟฟ้า","ค่าไฟ","คลอรีน","ค่าคลอรีน","เฉลี่ย/วัน"],
+    MN.map((mn,mi)=>{
+      const rows=S.data[`ww_${bldg}_${y}_${mi}`]||{},days=getDays(mi);
+      let tW=0,tWaste=0,tF=0,tO=0,tE=0,tC=0,tCl=0,tClC=0,cnt=0;
+      for(let d=1;d<=days;d++){const r=rows[d]||{};if(r.water){tW+=+r.water||0;tWaste+=+r.waste||0;tF+=+r.ww_flow||0;tO+=+r.waste_out||0;tE+=+r.elec_kwh||0;tC+=+r.elec_total||0;tCl+=+r.chlorine_l||0;tClC+=+r.chlorine_cost||0;cnt++;}}
+      return[mn,tW.toFixed(0),tWaste.toFixed(1),tF.toFixed(1),tO.toFixed(1),tE.toFixed(0),tC.toFixed(2),tCl.toFixed(1),tClC.toFixed(2),cnt>0?(tWaste/cnt).toFixed(2):0];
+    }));
+};
+window.exportWaterUsage=(docId)=>{
+  const rows=S.data[docId]||{},m=S.selMonth,y=S.selYear,days=getDays(m);
+  dlCsv(`น้ำประปา_${MN[m]}_${y}.csv`,["วันที่","โรงพยาบาล","ควนมดแดง","หอพัก","รวม"],
+    Array.from({length:days},(_,i)=>i+1).map(d=>{const r=rows[d]||{};const t=(+r.hospital||0)+(+r.khuan||0)+(+r.dorm||0);return[d,r.hospital||0,r.khuan||0,r.dorm||0,t];}));
+};
+window.exportChlorineStart=(docId)=>{
+  const rows=S.data[docId]||{},m=S.selMonth,y=S.selYear,days=getDays(m);
+  dlCsv(`คลอรีนต้นทาง_${MN[m]}_${y}.csv`,["วันที่","เวลา","คลอรีนอิสระ","TDS","หมายเหตุ","ผู้ตรวจ"],
+    Array.from({length:days},(_,i)=>i+1).map(d=>{const r=rows[d]||{};return[d,r.time,r.free_chlorine,r.tds,r.note,r.inspector];}));
+};
+window.exportChlorineEnd=(docId)=>{
+  const data=S.data[docId]||{},m=S.selMonth,y=S.selYear;
+  const rows=[];
+  [1,2,3,4,5].forEach(w=>BLDG_END.forEach(b=>{const r=data[w]?.[b]||{};rows.push([`สัปดาห์${w}`,b,SPOTS[b],r.chemical,r.clo2,r.free_chlorine,r.tds]);}));
+  dlCsv(`คลอรีนปลายทาง_${MN[m]}_${y}.csv`,["สัปดาห์","อาคาร","จุดเก็บ","สารเคมี","ClO2","คลอรีนอิสระ","TDS"],rows);
+};
+window.exportWQ=(docId)=>{
+  const rows=S.data[docId]||{},m=S.selMonth,y=S.selYear,days=getDays(m);
+  const out=[];
+  Array.from({length:days},(_,i)=>i+1).forEach(d=>["morning","afternoon"].forEach(sh=>{const r=rows[d]?.[sh]||{};out.push([d,sh==="morning"?"เช้า":"บ่าย",r.ph,r.tds]);}));
+  dlCsv(`pH_TDS_${MN[m]}_${y}.csv`,["วันที่","เวลา","pH","TDS"],out);
+};
+window.exportAnalysis=(docId,tab)=>{
+  const records=(S.data[docId]?.records)||[];
+  dlCsv(`ผลวิเคราะห์น้ำ_${tab}.csv`,["วันที่","จุดเก็บ","pH","TDS","แบคทีเรีย","ผลการตรวจ","ผู้ตรวจ","หมายเหตุ"],
+    records.map(r=>[r.date,r.sample_point,r.ph,r.tds,r.bacteria,r.result,r.inspector,r.note]));
+};
+window.exportAnalysisWW=(docId,title)=>{
+  const records=(S.data[docId]?.records)||[];
+  dlCsv(`ผลวิเคราะห์น้ำเสีย_${title}.csv`,["วันที่","จุดเก็บ","pH","BOD","SS","TKN","ผลการตรวจ","ผู้ตรวจ","หมายเหตุ"],
+    records.map(r=>[r.date,r.sample,r.ph,r.bod,r.ss,r.tkn,r.result,r.inspector,r.note]));
+};
+
+// ── Preload ────────────────────────────────────────────────────
+async function preload(page){
+  const m=S.selMonth,y=S.selYear;
+  const ids=[];
+  if(page==="dashboard") ids.push(`ww_research_${y}_${m}`,`ww_sth_${y}_${m}`,`water_usage_${y}_${m}`,`chlorine_start_${y}_${m}`);
+  else if(page==="ww-research-daily"||page==="ww-sth-daily"){
+    const b=page.includes("research")?"research":"sth";
+    ids.push(`ww_${b}_${y}_${m}`);
+    if(S.chartMode==="monthly") for(let i=0;i<12;i++)ids.push(`ww_${b}_${y}_${i}`);
+  }
+  else if(page==="ww-research-param"||page==="ww-sth-param"){
+    const b=page.includes("research")?"research":"sth";
+    const PARAMS=b==="research"?PARAMS_RESEARCH:PARAMS_STH;
+    const pid=S.selParamTab||(PARAMS[0].id);
+    ids.push(`ww_param_${b}_${pid}_${y}_${m}`);
+    if(S.chartMode==="monthly") for(let i=0;i<12;i++)ids.push(`ww_param_${b}_${pid}_${y}_${i}`);
+  }
+  else if(page==="ww-research-analysis") ids.push("ww_analysis_research");
+  else if(page==="ww-sth-analysis") ids.push("ww_analysis_sth");
+  else if(page==="ww-research-summary") for(let i=0;i<12;i++)ids.push(`ww_research_${y}_${i}`);
+  else if(page==="ww-sth-summary") for(let i=0;i<12;i++)ids.push(`ww_sth_${y}_${i}`);
+  else if(page==="water-usage") ids.push(`water_usage_${y}_${m}`);
+  else if(page==="chlorine-start") ids.push(`chlorine_start_${y}_${m}`);
+  else if(page==="chlorine-end") ids.push(`chlorine_end_${y}_${m}`);
+  else if(page==="water-quality") ids.push(`water_quality_${y}_${m}`);
+  else if(page==="water-analysis") ids.push(`water_analysis_${S.selTab||"tap"}`);
+  const missing=ids.filter(id=>S.data[id]===undefined);
+  if(missing.length>0){
+    const results=await Promise.all(missing.map(id=>fsGet(id)));
+    missing.forEach((id,i)=>{S.data[id]=results[i];});
+  }
+}
+
+// ── Auth ───────────────────────────────────────────────────────
+onAuthStateChanged(auth,async(user)=>{
+  if(user){
+    setState({loading:true});
+    const profile=await getUserRole(user.uid);
+    S.user=user; S.userRole=profile.role||"viewer"; S.userName=profile.name||user.email;
+    await preload("dashboard");
+    setState({loading:false});
+  } else {
+    S.user=null;S.userRole="viewer";S.userName="";S.data={};
+    setState({loading:false});
   }
 });
 </script>
