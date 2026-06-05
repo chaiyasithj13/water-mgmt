@@ -717,7 +717,7 @@ function renderChlorineStart(){
               <td>${isAdmin?inp(d,"tds",85):`<span class="${!isNaN(tds)&&tds>0?(tds<=500?"badge-ok":"badge-bad"):""}">${r.tds??"-"}</span>`}</td>
               <td>${inp(d,"ph",70)}</td>
               <td>${inp(d,"note",130,"text")}</td>
-              <td>${isAdmin?`<select class="tbl-input" style="width:115px" onchange="updateField('${docId}',${d},'inspector',this.value)"><option value="ธรรมนูญ" ${rows[d]?.inspector==="ธรรมนูญ"?" selected":""}>ธรรมนูญ</option><option value="วีระยุทธ" ${rows[d]?.inspector==="วีระยุทธ"?" selected":""}>วีระยุทธ</option><option value="สิทธิชัย" ${rows[d]?.inspector==="สิทธิชัย"?" selected":""}>สิทธิชัย</option><option value="ณัฐพัฒน์" ${rows[d]?.inspector==="ณัฐพัฒน์"?" selected":""}>ณัฐพัฒน์</option><option value="กรอกข้อมูลเอง" ${rows[d]?.inspector==="กรอกข้อมูลเอง"?" selected":""}>กรอกข้อมูลเอง</option></select>`:`<span>${rows[d]?.inspector??"-"}</span>`}</td>
+              <td>${mkInspSel(rows[d]?.inspector,isAdmin,"updateField('"+docId+"',"+d+",'inspector',this.value)")}</td>
             </tr>`;
           }).join("")}
         </tbody>
@@ -757,7 +757,7 @@ function renderChlorineEnd(){
                   <td>${isAdmin?inp2("free_chlorine",85):`<span class="${clClass}">${r.free_chlorine??"-"}</span>`}</td>
                   <td>${inp2("tds")}</td>
                   <td>${inp2("ph",70)}</td>
-                  <td>${isAdmin?`<select class="tbl-input" style="width:115px" onchange="updateEndRow('${docId}',${w},'${b}','inspector',this.value)"><option value="ธรรมนูญ" ${data[w]?.[b]?.inspector==="ธรรมนูญ"?" selected":""}>ธรรมนูญ</option><option value="วีระยุทธ" ${data[w]?.[b]?.inspector==="วีระยุทธ"?" selected":""}>วีระยุทธ</option><option value="สิทธิชัย" ${data[w]?.[b]?.inspector==="สิทธิชัย"?" selected":""}>สิทธิชัย</option><option value="ณัฐพัฒน์" ${data[w]?.[b]?.inspector==="ณัฐพัฒน์"?" selected":""}>ณัฐพัฒน์</option><option value="กรอกข้อมูลเอง" ${data[w]?.[b]?.inspector==="กรอกข้อมูลเอง"?" selected":""}>กรอกข้อมูลเอง</option></select>`:`<span>${data[w]?.[b]?.inspector??"-"}</span>`}</td>
+                  <td>${mkInspSel(data[w]?.[b]?.inspector,isAdmin,"updateEndRow("+JSON.stringify(docId)+","+w+","+JSON.stringify(b)+",'inspector',this.value)")}</td>
                 </tr>`;
               }).join("")}
             </tbody>
@@ -1066,6 +1066,12 @@ function drawParamChart(rows,param,m,y,bldg){
 }
 
 // ── Event handlers ────────────────────────────────────────────
+const INSPECTORS=['ธรรมนูญ','วีระยุทธ','สิทธิชัย','ณัฐพัฒน์','กรอกข้อมูลเอง'];
+function mkInspSel(val,isAdmin,onch){
+  if(!isAdmin) return '<span>'+(val||'-')+'</span>';
+  const opts=INSPECTORS.map(n=>'<option value="'+n+'"'+(val===n?' selected':'')+'>'+n+'</option>').join('');
+  return '<select class="tbl-input" style="width:115px" onchange="'+onch+'">'+opts+'</select>';
+}
 window.toggleSidebar=()=>setState({collapsed:!S.collapsed});
 window.navTo=async(page)=>{setState({page,loading:true});await preload(page);setState({loading:false});};
 window.doLogout=()=>signOut(auth);
