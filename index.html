@@ -1128,11 +1128,6 @@ window.updateField=(docId,d,f,v)=>{
   }
   debouncedSave(docId,S.data[docId]);
 };
-  if(!S.data[docId])S.data[docId]={};
-  if(!S.data[docId][d])S.data[docId][d]={};
-  S.data[docId][d][f]=v;
-  debouncedSave(docId,S.data[docId]);
-};
 window.updateEndRow=(docId,week,b,f,v)=>{
   if(!S.data[docId])S.data[docId]={};
   if(!S.data[docId][week])S.data[docId][week]={};
@@ -1176,7 +1171,6 @@ window.updateAnalysisField=(docId,id,f,v)=>{
   const r=S.data[docId]?.records?.find(r=>r.id===id);
   if(r){r[f]=v;debouncedSave(docId,S.data[docId]);}
 };
-window.addAnalysisWW=async(docId)=>addAnalysisGeneric(docId);
 window.addAnalysisWW=async(docId)=>{
   if(!S.data[docId])S.data[docId]={records:[]};
   if(!S.data[docId].records)S.data[docId].records=[];
