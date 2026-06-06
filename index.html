@@ -132,6 +132,7 @@ let S = {
   selTab:"", selParamTab:"ph",
   chartMode:"daily", // daily | monthly
   chartVisible:{water:true, waste:true, flow:true},
+  dashSystem:"ww-research", // ww-research | ww-sth | water
 };
 
 // ── Firestore ──────────────────────────────────────────────────
@@ -312,31 +313,126 @@ function avg(a,b){
 // ── DASHBOARD ──────────────────────────────────────────────────
 function renderDashboard(){
   const m=S.selMonth,y=S.selYear,days=getDays(m);
-  const rd=S.data[`ww_research_${y}_${m}`]||{};
-  const sd=S.data[`ww_sth_${y}_${m}`]||{};
-  const wd=S.data[`water_usage_${y}_${m}`]||{};
-  const cd=S.data[`chlorine_start_${y}_${m}`]||{};
-  let tWW=0,tSth=0,tWater=0,clOk=0,clTotal=0;
-  for(let d=1;d<=days;d++){
-    if(rd[d]?.waste)tWW+=+rd[d].waste||0;
-    if(sd[d]?.waste)tSth+=+sd[d].waste||0;
-    const wr=wd[d];if(wr)tWater+=(+wr.hospital||0)+(+wr.khuan||0)+(+wr.dorm||0);
-    const cl=+cd[d]?.free_chlorine;if(!isNaN(cl)&&cl>0){clTotal++;if(cl>=0.2)clOk++;}
+  const dsys=S.dashSystem||"ww-research"; // ww-research | ww-sth | water
+
+  // ---- ระบบบำบัดน้ำเสีย อาคารวิจัย ----
+  function calcWW(bldg,mi){
+    const rows=S.data[`ww_${bldg}_${y}_${mi}`]||{},dd=getDays(mi);
+    let tW=0,tWaste=0,tFlow=0,tOut=0,tE=0,tC=0,tCl=0,tClC=0,cnt=0;
+    for(let d=1;d<=dd;d++){const r=rows[d]||{};if(r.water){tW+=+r.water||0;tWaste+=r.water?(+r.water*0.8):0;tFlow+=+r.ww_flow||0;tOut+=+r.waste_out||0;tE+=+r.elec_kwh||0;tC+=+r.elec_total||0;tCl+=+r.chlorine_l||0;tClC+=+r.chlorine_cost||0;cnt++;}}
+    return{tW,tWaste,tFlow,tOut,tE,tC,tCl,tClC,cnt};
   }
+  function calcWater(mi){
+    const rows=S.data[`water_usage_${y}_${mi}`]||{},dd=getDays(mi);
+    let tH=0,tK=0,tD=0,cnt=0;
+    for(let d=1;d<=dd;d++){const r=rows[d]||{};if(r.hospital||r.khuan||r.dorm){tH+=+r.hospital||0;tK+=+r.khuan||0;tD+=+r.dorm||0;cnt++;}}
+    return{tH,tK,tD,total:tH+tK+tD,cnt};
+  }
+  function calcCl(mi){
+    const rows=S.data[`chlorine_start_${y}_${mi}`]||{},dd=getDays(mi);
+    let ok=0,tot=0;
+    for(let d=1;d<=dd;d++){const cl=+rows[d]?.free_chlorine;if(!isNaN(cl)&&cl>0){tot++;if(cl>=0.2)ok++;}}
+    return{ok,tot};
+  }
+
+  const isWW=(dsys==="ww-research"||dsys==="ww-sth");
+  const bldg=dsys==="ww-sth"?"sth":"research";
+  const title=dsys==="ww-research"?"ระบบบำบัดน้ำเสีย — อาคารวิจัยฯ":dsys==="ww-sth"?"ระบบบำบัดน้ำเสีย — อาคาร สธ.":"ระบบประปา";
+
+  // stat cards this month
+  let statCards="";
+  if(isWW){
+    const{tW,tWaste,tFlow,tOut,tE,tC,tCl,tClC}=calcWW(bldg,m);
+    statCards=[
+      ["น้ำประปา",tW.toFixed(0),"ลบ.ม.","var(--blue)"],
+      ["น้ำเสียเข้าระบบ",tWaste.toFixed(1),"ลบ.ม.","var(--teal)"],
+      ["น้ำเสีย Flowmeter",tFlow.toFixed(1),"ลบ.ม.","var(--teal)"],
+      ["น้ำทิ้ง",tOut.toFixed(1),"ลบ.ม.","var(--gray4)"],
+      ["ไฟฟ้า",tE.toFixed(0),"kW","var(--amber)"],
+      ["ค่าไฟฟ้า",tC.toFixed(2),"บาท","var(--amber)"],
+      ["คลอรีน",tCl.toFixed(1),"ลิตร","var(--teal)"],
+      ["ค่าคลอรีน",tClC.toFixed(2),"บาท","var(--teal)"],
+    ].map(([l,v,u,c])=>`<div class="stat-card"><div class="stat-lbl">${l}</div><div class="stat-val" style="font-size:17px;color:${c}">${v}</div><div style="font-size:11px;color:var(--gray3)">${u}</div></div>`).join("");
+  } else {
+    const{tH,tK,tD,total}=calcWater(m);
+    const{ok,tot}=calcCl(m);
+    statCards=[
+      ["โรงพยาบาล",tH.toLocaleString(),"ลบ.ม.","var(--blue)"],
+      ["ควนมดแดง",tK.toLocaleString(),"ลบ.ม.","var(--blue)"],
+      ["หอพัก",tD.toLocaleString(),"ลบ.ม.","var(--blue)"],
+      ["รวมทั้งหมด",total.toLocaleString(),"ลบ.ม.","var(--teal)"],
+      ["คลอรีนผ่านเกณฑ์",tot>0?`${ok}/${tot} วัน`:"-",tot>0?`${Math.round(ok/tot*100)}%`:"",tot>0&&ok/tot<0.9?"var(--red)":"var(--green)"],
+    ].map(([l,v,u,c])=>`<div class="stat-card"><div class="stat-lbl">${l}</div><div class="stat-val" style="font-size:17px;color:${c}">${v}</div><div style="font-size:11px;color:var(--gray3)">${u}</div></div>`).join("");
+  }
+
+  // monthly summary table
+  const summaryRows=MN.map((mn,mi)=>{
+    if(isWW){
+      const{tW,tWaste,tFlow,tOut,tE,tC,tCl,tClC,cnt}=calcWW(bldg,mi);
+      const e=cnt===0;
+      return `<tr style="opacity:${e?.4:1}">
+        <td style="font-weight:500;text-align:left">${mn}</td>
+        <td>${e?"-":tW.toFixed(0)}</td><td>${e?"-":tWaste.toFixed(1)}</td><td>${e?"-":tFlow.toFixed(1)}</td><td>${e?"-":tOut.toFixed(1)}</td>
+        <td>${e?"-":tE.toFixed(0)}</td><td>${e?"-":tC.toFixed(2)}</td><td>${e?"-":tCl.toFixed(1)}</td><td>${e?"-":tClC.toFixed(2)}</td>
+        <td>${e?"-":cnt>0?(tW/cnt).toFixed(1):0}</td>
+      </tr>`;
+    } else {
+      const{tH,tK,tD,total,cnt}=calcWater(mi);
+      const{ok,tot}=calcCl(mi);
+      const e=cnt===0;
+      return `<tr style="opacity:${e?.4:1}">
+        <td style="font-weight:500;text-align:left">${mn}</td>
+        <td>${e?"-":tH.toLocaleString()}</td><td>${e?"-":tK.toLocaleString()}</td><td>${e?"-":tD.toLocaleString()}</td>
+        <td style="font-weight:600;color:var(--blue)">${e?"-":total.toLocaleString()}</td>
+        <td>${tot>0?ok+"/"+tot+" ("+Math.round(ok/tot*100)+"%)":"-"}</td>
+        <td>${e?"-":cnt>0?(total/cnt).toFixed(1):0}</td>
+      </tr>`;
+    }
+  }).join("");
+
+  const summaryHead=isWW
+    ?`<tr><th style="text-align:left">เดือน</th><th>น้ำประปา<br><small>ลบ.ม.</small></th><th>น้ำเสีย<br><small>ลบ.ม.</small></th><th>Flowmeter<br><small>ลบ.ม.</small></th><th>น้ำทิ้ง<br><small>ลบ.ม.</small></th><th>ไฟฟ้า<br><small>kW</small></th><th>ค่าไฟ<br><small>บาท</small></th><th>คลอรีน<br><small>ลิตร</small></th><th>ค่าคลอรีน<br><small>บาท</small></th><th>น้ำประปา/วัน<br><small>ลบ.ม.</small></th></tr>`
+    :`<tr><th style="text-align:left">เดือน</th><th>โรงพยาบาล<br><small>ลบ.ม.</small></th><th>ควนมดแดง<br><small>ลบ.ม.</small></th><th>หอพัก<br><small>ลบ.ม.</small></th><th>รวม<br><small>ลบ.ม.</small></th><th>คลอรีนผ่านเกณฑ์</th><th>เฉลี่ย/วัน<br><small>ลบ.ม.</small></th></tr>`;
+
   return `<div>
-    <h2 style="font-size:20px;font-weight:600;margin-bottom:4px">ภาพรวมระบบ</h2>
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
-      <p style="font-size:13px;color:var(--gray4)">${MN[m]} ${y}</p>${mySel()}
+    <h2 style="font-size:20px;font-weight:600;margin-bottom:14px">ภาพรวมระบบ</h2>
+
+    <!-- controls row -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+      <select class="input-field" style="width:220px;font-weight:500" onchange="chDashSystem(this.value)">
+        <option value="ww-research"${dsys==="ww-research"?" selected":""}>ระบบบำบัดน้ำเสีย — อาคารวิจัยฯ</option>
+        <option value="ww-sth"${dsys==="ww-sth"?" selected":""}>ระบบบำบัดน้ำเสีย — อาคาร สธ.</option>
+        <option value="water"${dsys==="water"?" selected":""}>ระบบประปา</option>
+      </select>
+      <select class="input-field" style="width:86px" onchange="chYear(this.value)">
+        ${[2568,2569,2570].map(yr=>`<option value="${yr}"${y===yr?" selected":""}>${yr}</option>`).join("")}
+      </select>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:20px">
-      ${[["น้ำเสีย (วิจัยฯ)",tWW.toFixed(1),"ลบ.ม.","var(--blue)"],
-         ["น้ำเสีย (สธ.)",tSth.toFixed(1),"ลบ.ม.","var(--teal)"],
-         ["การใช้น้ำประปา",tWater.toLocaleString(),"ลบ.ม.","var(--amber)"],
-         ["คลอรีนผ่านเกณฑ์",clTotal>0?`${clOk}/${clTotal} วัน`:"-",clTotal>0?`(${Math.round(clOk/clTotal*100)}%)`:"",clTotal>0&&clOk/clTotal<0.9?"var(--red)":"var(--green)"]
-        ].map(([l,v,u,c])=>`<div class="card"><div style="font-size:12px;color:var(--gray4);margin-bottom:6px">${l}</div><div style="font-size:24px;font-weight:600;color:${c}">${v}</div><div style="font-size:12px;color:var(--gray3)">${u}</div></div>`).join("")}
+
+    <!-- stat cards (this month = selMonth) -->
+    <div style="margin-bottom:6px;font-size:12px;font-weight:600;color:var(--gray3);text-transform:uppercase;letter-spacing:.05em">${MN[m]} ${y}</div>
+    <div style="margin-bottom:10px">
+      ${mySel()}
     </div>
-    <div class="alert alert-info" style="font-size:13px">
-      <strong>ปีงบประมาณ ${y}</strong> — ข้อมูล Real-time ทุกคนเห็นพร้อมกัน | URL: <strong>water-mgmt-psu.web.app</strong>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:24px">
+      ${statCards}
+    </div>
+
+    <!-- กราฟรายเดือน -->
+    <div class="chart-container" style="margin-bottom:24px">
+      <div style="font-size:14px;font-weight:600;color:var(--gray5);margin-bottom:12px">กราฟสรุปรายเดือน — ปีงบประมาณ ${y}</div>
+      <canvas id="chart-dashboard-main" height="75"></canvas>
+    </div>
+
+    <!-- ตารางสรุปรายเดือน -->
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="padding:14px 16px;font-size:14px;font-weight:600;border-bottom:1px solid var(--border)">สรุปรายเดือน — ${title}</div>
+      <div style="overflow-x:auto">
+        <table class="table">
+          <thead>${summaryHead}</thead>
+          <tbody>${summaryRows}</tbody>
+        </table>
+      </div>
     </div>
   </div>`;
 }
@@ -989,6 +1085,9 @@ function destroyChart(id){if(chartInstances[id]){chartInstances[id].destroy();de
 
 function renderCharts(){
   const m=S.selMonth,y=S.selYear;
+  if(S.page==="dashboard"){
+    setTimeout(()=>drawDashboardChart(y),50);
+  }
   if(S.page==="ww-research-daily"||S.page==="ww-sth-daily"){
     const bldg=S.page==="ww-research-daily"?"research":"sth";
     const docId=`ww_${bldg}_${y}_${m}`;
@@ -1002,6 +1101,60 @@ function renderCharts(){
     const docId=`ww_param_${bldg}_${param.id}_${y}_${m}`;
     const rows=S.data[docId]||{};
     setTimeout(()=>drawParamChart(rows,param,m,y,bldg),50);
+  }
+}
+
+function drawDashboardChart(y){
+  destroyChart("chart-dashboard-main");
+  const canvas=document.getElementById("chart-dashboard-main");
+  if(!canvas)return;
+  const dsys=S.dashSystem||"ww-research";
+  const labels=MS;
+  let datasets=[];
+  if(dsys==="ww-research"||dsys==="ww-sth"){
+    const bldg=dsys==="ww-sth"?"sth":"research";
+    const waterData=MS.map((_,mi)=>{const r=S.data[`ww_${bldg}_${y}_${mi}`]||{};let t=0,c=0;for(let d=1;d<=getDays(mi);d++){if(r[d]?.water){t+=+r[d].water||0;c++;}}return c>0?+(t/c).toFixed(1):null;});
+    const wasteData=MS.map((_,mi)=>{const r=S.data[`ww_${bldg}_${y}_${mi}`]||{};let t=0,c=0;for(let d=1;d<=getDays(mi);d++){if(r[d]?.water){t+=r[d].water?(+r[d].water*0.8):0;c++;}}return c>0?+(t/c).toFixed(1):null;});
+    const flowData=MS.map((_,mi)=>{const r=S.data[`ww_${bldg}_${y}_${mi}`]||{};let t=0,c=0;for(let d=1;d<=getDays(mi);d++){if(r[d]?.ww_flow){t+=+r[d].ww_flow||0;c++;}}return c>0?+(t/c).toFixed(1):null;});
+    const elecData=MS.map((_,mi)=>{const r=S.data[`ww_${bldg}_${y}_${mi}`]||{};let t=0,c=0;for(let d=1;d<=getDays(mi);d++){if(r[d]?.elec_kwh){t+=+r[d].elec_kwh||0;c++;}}return c>0?+(t/c).toFixed(1):null;});
+    datasets=[
+      {label:"น้ำประปา (เฉลี่ย/วัน ลบ.ม.)",data:waterData,borderColor:"#1a6fb5",backgroundColor:"#1a6fb533",tension:0.35,yAxisID:"y"},
+      {label:"น้ำเสีย (เฉลี่ย/วัน ลบ.ม.)",data:wasteData,borderColor:"#0f7c63",backgroundColor:"#0f7c6333",tension:0.35,yAxisID:"y"},
+      {label:"Flowmeter (เฉลี่ย/วัน ลบ.ม.)",data:flowData,borderColor:"#e05c00",backgroundColor:"#e05c0033",tension:0.35,yAxisID:"y"},
+      {label:"ไฟฟ้า (เฉลี่ย/วัน kW)",data:elecData,borderColor:"#8b1a8b",backgroundColor:"#8b1a8b22",tension:0.35,yAxisID:"y2",borderDash:[5,3]},
+    ];
+    chartInstances["chart-dashboard-main"]=new Chart(canvas,{
+      type:"line",data:{labels,datasets},
+      options:{responsive:true,interaction:{mode:"index",intersect:false},
+        plugins:{legend:{position:"top",labels:{boxWidth:12,font:{size:11}}}},
+        scales:{
+          y:{beginAtZero:true,title:{display:true,text:"ลบ.ม./วัน"},position:"left"},
+          y2:{beginAtZero:true,title:{display:true,text:"kW/วัน"},position:"right",grid:{drawOnChartArea:false}},
+        }
+      }
+    });
+  } else {
+    // water system
+    const hospData=MS.map((_,mi)=>{const r=S.data[`water_usage_${y}_${mi}`]||{};let t=0,c=0;for(let d=1;d<=getDays(mi);d++){if(r[d]?.hospital){t+=+r[d].hospital||0;c++;}}return c>0?+(t/c).toFixed(1):null;});
+    const kuanData=MS.map((_,mi)=>{const r=S.data[`water_usage_${y}_${mi}`]||{};let t=0,c=0;for(let d=1;d<=getDays(mi);d++){if(r[d]?.khuan){t+=+r[d].khuan||0;c++;}}return c>0?+(t/c).toFixed(1):null;});
+    const dormData=MS.map((_,mi)=>{const r=S.data[`water_usage_${y}_${mi}`]||{};let t=0,c=0;for(let d=1;d<=getDays(mi);d++){if(r[d]?.dorm){t+=+r[d].dorm||0;c++;}}return c>0?+(t/c).toFixed(1):null;});
+    const clData=MS.map((_,mi)=>{const r=S.data[`chlorine_start_${y}_${mi}`]||{};let ok=0,tot=0;for(let d=1;d<=getDays(mi);d++){const cl=+r[d]?.free_chlorine;if(!isNaN(cl)&&cl>0){tot++;if(cl>=0.2)ok++;}}return tot>0?+(ok/tot*100).toFixed(0):null;});
+    datasets=[
+      {label:"โรงพยาบาล (เฉลี่ย/วัน ลบ.ม.)",data:hospData,borderColor:"#1a6fb5",backgroundColor:"#1a6fb533",tension:0.35,yAxisID:"y"},
+      {label:"ควนมดแดง (เฉลี่ย/วัน ลบ.ม.)",data:kuanData,borderColor:"#0f7c63",backgroundColor:"#0f7c6333",tension:0.35,yAxisID:"y"},
+      {label:"หอพัก (เฉลี่ย/วัน ลบ.ม.)",data:dormData,borderColor:"#e05c00",backgroundColor:"#e05c0033",tension:0.35,yAxisID:"y"},
+      {label:"คลอรีนผ่านเกณฑ์ (%)",data:clData,borderColor:"#1e7e34",backgroundColor:"#1e7e3422",tension:0.35,yAxisID:"y2",borderDash:[5,3]},
+    ];
+    chartInstances["chart-dashboard-main"]=new Chart(canvas,{
+      type:"line",data:{labels,datasets},
+      options:{responsive:true,interaction:{mode:"index",intersect:false},
+        plugins:{legend:{position:"top",labels:{boxWidth:12,font:{size:11}}}},
+        scales:{
+          y:{beginAtZero:true,title:{display:true,text:"ลบ.ม./วัน"},position:"left"},
+          y2:{beginAtZero:true,max:100,title:{display:true,text:"คลอรีน %"},position:"right",grid:{drawOnChartArea:false}},
+        }
+      }
+    });
   }
 }
 
@@ -1088,6 +1241,7 @@ function handleInspChange(sel, onch){
 }
 window.toggleSidebar=()=>setState({collapsed:!S.collapsed});
 window.navTo=async(page)=>{setState({page,loading:true});await preload(page);setState({loading:false});};
+window.chDashSystem=async(v)=>{S.dashSystem=v;setState({loading:true});await preload("dashboard");setState({loading:false});};
 window.doLogout=()=>signOut(auth);
 window.chMonth=(v)=>{S.selMonth=+v;preload(S.page).then(()=>setState({}));};
 window.chYear=(v)=>{S.selYear=+v;preload(S.page).then(()=>setState({}));};
@@ -1343,7 +1497,16 @@ window.exportAnalysisWW=(docId,title)=>{
 async function preload(page){
   const m=S.selMonth,y=S.selYear;
   const ids=[];
-  if(page==="dashboard") ids.push(`ww_research_${y}_${m}`,`ww_sth_${y}_${m}`,`water_usage_${y}_${m}`,`chlorine_start_${y}_${m}`);
+  if(page==="dashboard"){
+    const dsys=S.dashSystem||"ww-research";
+    if(dsys==="ww-research"||dsys==="ww-sth"){
+      const bldg=dsys==="ww-sth"?"sth":"research";
+      for(let i=0;i<12;i++)ids.push(`ww_${bldg}_${y}_${i}`);
+    } else {
+      for(let i=0;i<12;i++)ids.push(`water_usage_${y}_${i}`);
+      for(let i=0;i<12;i++)ids.push(`chlorine_start_${y}_${i}`);
+    }
+  }
   else if(page==="ww-research-daily"||page==="ww-sth-daily"){
     const b=page.includes("research")?"research":"sth";
     ids.push(`ww_${b}_${y}_${m}`);
