@@ -699,7 +699,7 @@ function renderChlorineStart(){
   const inp=(d,f,w=80,type="number")=>isAdmin?`<input type="${type}" class="tbl-input" style="width:${w}px" value="${rows[d]?.[f]??""}" onchange="updateField('${docId}',${d},'${f}',this.value)" step="any">`:`<span>${rows[d]?.[f]??"-"}</span>`;
   return `<div>
     <div class="page-header">
-      <div><h2 style="font-size:19px;font-weight:600">คลอรีน (ต้นทาง) ประจำวัน</h2><p style="font-size:13px;color:var(--gray4);margin-top:2px">เกณฑ์: คลอรีน ≥ 0.2 มก./ล, TDS ≤ 500 มก./ล</p></div>
+      <div><h2 style="font-size:19px;font-weight:600">คลอรีน (ต้นทาง) ประจำวัน</h2><p style="font-size:13px;color:var(--gray4);margin-top:2px">เกณฑ์: คลอรีน ≥ 0.2 มก./ล, TDS ≤ 1,000 มก./ล</p></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">${mySel()}<button class="btn btn-ghost btn-sm" onclick="exportChlorineStart('${docId}')">Export CSV</button></div>
     </div>
     ${tot>0?`<div class="alert ${ok/tot>=0.9?"alert-success":"alert-warn"}" style="margin-bottom:14px">คลอรีนผ่านเกณฑ์ ${ok}/${tot} วัน (${Math.round(ok/tot*100)}%)</div>`:""}
@@ -714,7 +714,7 @@ function renderChlorineStart(){
               <td style="font-weight:500;color:var(--gray4)">${d}</td>
               <td>${inp(d,"time",70,"text")}</td>
               <td>${isAdmin?inp(d,"free_chlorine",85):`<span class="${!isNaN(cl)&&cl>0?(cl>=0.2?"badge-ok":"badge-bad"):""}">${r.free_chlorine??"-"}</span>`}</td>
-              <td>${isAdmin?inp(d,"tds",85):`<span class="${!isNaN(tds)&&tds>0?(tds<=500?"badge-ok":"badge-bad"):""}">${r.tds??"-"}</span>`}</td>
+              <td>${isAdmin?inp(d,"tds",85):`<span class="${!isNaN(tds)&&tds>0?(tds<=1000?"badge-ok":"badge-bad"):""}">${r.tds??"-"}</span>`}</td>
               <td>${inp(d,"ph",70)}</td>
               <td>${inp(d,"note",130,"text")}</td>
               <td>${mkInspSel(rows[d]?.inspector,isAdmin,"updateField('"+docId+"',"+d+",'inspector',this.value)")}</td>
@@ -895,18 +895,23 @@ function renderWaterAnalysis(){
         <select class="input-field" style="width:86px" onchange="chWaterAnalysisYear(this.value)">
           ${[2568,2569,2570].map(y=>`<option value="${y}"${selYear===y?" selected":""}>${y}</option>`).join("")}
         </select>
-        <select class="input-field" style="width:160px" onchange="chWaterAnalysisBuilding(this.value)">
-          ${BUILDINGS_WATER.map(b=>`<option value="${b}"${selBuilding===b?" selected":""}>${b}</option>`).join("")}
-        </select>
         <button class="btn btn-ghost btn-sm" onclick="exportWaterAnalysisNew('${docId}','${tab}','${MN[selMonth]}','${selYear}')">Export CSV</button>
       </div>
     </div>
     <div class="tab-bar">${TYPES.map(t=>`<button class="tab${tab===t.id?" active":""}" onclick="chTab('${t.id}')">${t.label}</button>`).join("")}</div>
 
     <div class="card">
-      <div style="margin-bottom:16px">
-        <label class="label">วันที่ส่งตัวอย่าง</label>
-        ${isAdmin?`<input type="date" class="input-field" style="width:180px" value="${rec.send_date||""}" onchange="updateWaterAnalysisField('${docId}','send_date',this.value)">`:`<span>${rec.send_date||"-"}</span>`}
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px">
+        <div>
+          <label class="label">อาคาร</label>
+          <select class="input-field" style="width:180px" onchange="chWaterAnalysisBuilding(this.value)">
+            ${BUILDINGS_WATER.map(b=>`<option value="${b}"${selBuilding===b?" selected":""}>${b}</option>`).join("")}
+          </select>
+        </div>
+        <div>
+          <label class="label">วันที่ส่งตัวอย่าง</label>
+          ${isAdmin?`<input type="date" class="input-field" style="width:180px" value="${rec.send_date||""}" onchange="updateWaterAnalysisField('${docId}','send_date',this.value)">`:`<span>${rec.send_date||"-"}</span>`}
+        </div>
       </div>
 
       <table class="table" style="margin-bottom:16px">
@@ -1072,40 +1077,14 @@ function drawParamChart(rows,param,m,y,bldg){
 }
 
 // ── Event handlers ────────────────────────────────────────────
-const INSPECTORS=['ธรรมนูญ','วีระยุทธ','สิทธิชัย','ณัฐพัฒน์','กรอกข้อมูลเอง'];
+const INSPECTORS=['ธรรมนูญ','วีระยุทธ','สิทธิชัย','ณัฐพัฒน์'];
 function mkInspSel(val,isAdmin,onch){
   if(!isAdmin) return '<span>'+(val||'-')+'</span>';
-  const isCustom = val && !INSPECTORS.slice(0,-1).includes(val);
-  const displayVal = isCustom ? 'กรอกข้อมูลเอง' : (val||'');
-  const opts=INSPECTORS.map(n=>'<option value="'+n+'"'+(displayVal===n?' selected':'')+'>'+n+'</option>').join('');
-  const sel='<select class="tbl-input" style="width:115px" onchange="handleInspChange(this,'+JSON.stringify(onch)+')">'+opts+'</select>';
-  const txt=isCustom?'<input type="text" class="tbl-input" style="width:115px;margin-top:2px" value="'+(isCustom?val:'')+'" onchange="'+onch+'" placeholder="พิมพ์ชื่อ...">'  :'';
-  return sel+txt;
+  const opts='<option value=""></option>'+INSPECTORS.map(n=>'<option value="'+n+'"'+(val===n?' selected':'')+'>'+n+'</option>').join('');
+  return '<select class="tbl-input" style="width:115px" onchange="'+onch+'">'+opts+'</select>';
 }
 function handleInspChange(sel, onch){
-  const val = sel.value;
-  const container = sel.parentElement;
-  // Remove existing text input if any
-  const existingInput = container.querySelector('input.tbl-input');
-  if(existingInput) existingInput.remove();
-  if(val === 'กรอกข้อมูลเอง'){
-    const inp = document.createElement('input');
-    inp.type = 'text';
-    inp.className = 'tbl-input';
-    inp.style.width = '115px';
-    inp.style.marginTop = '2px';
-    inp.placeholder = 'พิมพ์ชื่อ...';
-    inp.addEventListener('change', function(){ eval(onch.replace('this.value', JSON.stringify(this.value))); });
-    inp.addEventListener('input', function(){ 
-      const fn = new Function('return '+onch.replace(/this\.value/g, JSON.stringify(this.value)));
-      try{ eval(onch.replace('this.value', JSON.stringify(this.value))); }catch(e){}
-    });
-    container.appendChild(inp);
-    inp.focus();
-  } else {
-    // Call original onchange with selected value
-    try{ eval(onch.replace('this.value', JSON.stringify(val))); }catch(e){}
-  }
+  try{ eval(onch.replace('this.value', JSON.stringify(sel.value))); }catch(e){}
 }
 window.toggleSidebar=()=>setState({collapsed:!S.collapsed});
 window.navTo=async(page)=>{setState({page,loading:true});await preload(page);setState({loading:false});};
