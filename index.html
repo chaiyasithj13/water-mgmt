@@ -1364,4 +1364,84 @@ window.exportAnalysisWW=(docId,title)=>{
 async function preload(page){
   const m=S.selMonth,y=S.selYear;
   const ids=[];
-  if(page==="dashboard") ids.push(`ww_research_${y}_${m}`,`ww_sth_${y}_
+  if(page==="dashboard") ids.push(`ww_research_${y}_${m}`,`ww_sth_${y}_${m}`,`water_usage_${y}_${m}`,`chlorine_start_${y}_${m}`);
+  else if(page==="ww-research-daily"||page==="ww-sth-daily"){
+    const b=page.includes("research")?"research":"sth";
+    ids.push(`ww_${b}_${y}_${m}`);
+    if(S.chartMode==="monthly") for(let i=0;i<12;i++)ids.push(`ww_${b}_${y}_${i}`);
+  }
+  else if(page==="ww-research-param"||page==="ww-sth-param"){
+    const b=page.includes("research")?"research":"sth";
+    const PARAMS=b==="research"?PARAMS_RESEARCH:PARAMS_STH;
+    const pid=S.selParamTab||(PARAMS[0].id);
+    ids.push(`ww_param_${b}_${pid}_${y}_${m}`);
+    if(S.chartMode==="monthly") for(let i=0;i<12;i++)ids.push(`ww_param_${b}_${pid}_${y}_${i}`);
+  }
+  else if(page==="ww-research-analysis"){
+    const m2=S.wwAnalysisMonth??new Date().getMonth();
+    const y2=S.wwAnalysisYear??S.selYear;
+    ids.push(`ww_analysis_research_${y2}_${m2}`);
+  }
+  else if(page==="ww-sth-analysis"){
+    const m2=S.wwAnalysisMonth??new Date().getMonth();
+    const y2=S.wwAnalysisYear??S.selYear;
+    ids.push(`ww_analysis_sth_${y2}_${m2}`);
+  }
+  else if(page==="ww-research-summary"){
+    for(let i=0;i<12;i++)ids.push(`ww_research_${y}_${i}`);
+    for(let i=0;i<12;i++)ids.push(`ww_analysis_research_${y}_${i}`);
+  }
+  else if(page==="ww-sth-summary"){
+    for(let i=0;i<12;i++)ids.push(`ww_sth_${y}_${i}`);
+    for(let i=0;i<12;i++)ids.push(`ww_analysis_sth_${y}_${i}`);
+  }
+  else if(page==="water-usage") ids.push(`water_usage_${y}_${m}`);
+  else if(page==="chlorine-start") ids.push(`chlorine_start_${y}_${m}`);
+  else if(page==="chlorine-end") ids.push(`chlorine_end_${y}_${m}`);
+  else if(page==="water-analysis"){
+    const tab2=S.selTab||"tap";
+    const m2=S.waterAnalysisMonth??new Date().getMonth();
+    const y2=S.waterAnalysisYear??S.selYear;
+    const b2=(S.waterAnalysisBuilding||BUILDINGS_WATER[0]).replace(/[^a-zA-Z0-9ก-๙]/g,"_");
+    ids.push(`water_analysis_${tab2}_${y2}_${m2}_${b2}`);
+  }
+  const missing=ids.filter(id=>S.data[id]===undefined);
+  if(missing.length>0){
+    const results=await Promise.all(missing.map(id=>fsGet(id)));
+    missing.forEach((id,i)=>{S.data[id]=results[i];});
+  }
+}
+
+// ── Auth ───────────────────────────────────────────────────────
+// Timeout: ถ้า Firebase ไม่ตอบใน 10 วินาที ให้แสดงหน้า login แทนค้าง
+const _authTimeout = setTimeout(()=>{
+  if(S.loading){
+    console.warn("Firebase auth timeout — แสดงหน้า login");
+    S.user=null; S.userRole="viewer"; S.userName=""; S.data={};
+    setState({loading:false});
+  }
+},10000);
+
+onAuthStateChanged(auth,async(user)=>{
+  clearTimeout(_authTimeout);
+  if(user){
+    setState({loading:true});
+    try{
+      const profile=await getUserRole(user.uid);
+      S.user=user; S.userRole=profile.role||"viewer"; S.userName=profile.name||user.email;
+      await preload("dashboard");
+    }catch(err){
+      console.error("โหลดข้อมูลผู้ใช้ล้มเหลว:",err);
+      // ยังให้ login ได้ แต่ role เป็น viewer
+      S.user=user; S.userRole="viewer"; S.userName=user.email; S.data={};
+    }finally{
+      setState({loading:false});
+    }
+  } else {
+    S.user=null;S.userRole="viewer";S.userName="";S.data={};
+    setState({loading:false});
+  }
+});
+</script>
+</body>
+</html>
