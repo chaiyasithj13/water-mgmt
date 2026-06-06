@@ -861,6 +861,8 @@ const WATER_ANALYSIS_TYPES = {
   },
 };
 
+const BUILDINGS_WATER=['อาคารเฉลิมพระบารมี','อาคารศรีเวชวัฒน์','อาคารรัตนชีวรักษ์','อาคาร 100 ปี','อาคารโรงพยาบาล','น้ำเข้าโรงพยาบาล'];
+
 function renderWaterAnalysis(){
   const TYPES=[
     {id:"tap",label:"น้ำประปา (ทุก 6 เดือน)"},
@@ -871,7 +873,8 @@ function renderWaterAnalysis(){
   const tdata=WATER_ANALYSIS_TYPES[tab];
   const selMonth=S.waterAnalysisMonth??new Date().getMonth();
   const selYear=S.waterAnalysisYear??S.selYear;
-  const docId=`water_analysis_${tab}_${selYear}_${selMonth}`;
+  const selBuilding=S.waterAnalysisBuilding||BUILDINGS_WATER[0];
+  const docId=`water_analysis_${tab}_${selYear}_${selMonth}_${selBuilding.replace(/[^a-zA-Z0-9ก-๙]/g,'_')}`;
   const rec=S.data[docId]||{};
   const isAdmin=S.userRole==="admin";
 
@@ -891,6 +894,9 @@ function renderWaterAnalysis(){
         </select>
         <select class="input-field" style="width:86px" onchange="chWaterAnalysisYear(this.value)">
           ${[2568,2569,2570].map(y=>`<option value="${y}"${selYear===y?" selected":""}>${y}</option>`).join("")}
+        </select>
+        <select class="input-field" style="width:160px" onchange="chWaterAnalysisBuilding(this.value)">
+          ${BUILDINGS_WATER.map(b=>`<option value="${b}"${selBuilding===b?" selected":""}>${b}</option>`).join("")}
         </select>
         <button class="btn btn-ghost btn-sm" onclick="exportWaterAnalysisNew('${docId}','${tab}','${MN[selMonth]}','${selYear}')">Export CSV</button>
       </div>
@@ -1069,8 +1075,37 @@ function drawParamChart(rows,param,m,y,bldg){
 const INSPECTORS=['ธรรมนูญ','วีระยุทธ','สิทธิชัย','ณัฐพัฒน์','กรอกข้อมูลเอง'];
 function mkInspSel(val,isAdmin,onch){
   if(!isAdmin) return '<span>'+(val||'-')+'</span>';
-  const opts=INSPECTORS.map(n=>'<option value="'+n+'"'+(val===n?' selected':'')+'>'+n+'</option>').join('');
-  return '<select class="tbl-input" style="width:115px" onchange="'+onch+'">'+opts+'</select>';
+  const isCustom = val && !INSPECTORS.slice(0,-1).includes(val);
+  const displayVal = isCustom ? 'กรอกข้อมูลเอง' : (val||'');
+  const opts=INSPECTORS.map(n=>'<option value="'+n+'"'+(displayVal===n?' selected':'')+'>'+n+'</option>').join('');
+  const sel='<select class="tbl-input" style="width:115px" onchange="handleInspChange(this,'+JSON.stringify(onch)+')">'+opts+'</select>';
+  const txt=isCustom?'<input type="text" class="tbl-input" style="width:115px;margin-top:2px" value="'+(isCustom?val:'')+'" onchange="'+onch+'" placeholder="พิมพ์ชื่อ...">'  :'';
+  return sel+txt;
+}
+function handleInspChange(sel, onch){
+  const val = sel.value;
+  const container = sel.parentElement;
+  // Remove existing text input if any
+  const existingInput = container.querySelector('input.tbl-input');
+  if(existingInput) existingInput.remove();
+  if(val === 'กรอกข้อมูลเอง'){
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'tbl-input';
+    inp.style.width = '115px';
+    inp.style.marginTop = '2px';
+    inp.placeholder = 'พิมพ์ชื่อ...';
+    inp.addEventListener('change', function(){ eval(onch.replace('this.value', JSON.stringify(this.value))); });
+    inp.addEventListener('input', function(){ 
+      const fn = new Function('return '+onch.replace(/this\.value/g, JSON.stringify(this.value)));
+      try{ eval(onch.replace('this.value', JSON.stringify(this.value))); }catch(e){}
+    });
+    container.appendChild(inp);
+    inp.focus();
+  } else {
+    // Call original onchange with selected value
+    try{ eval(onch.replace('this.value', JSON.stringify(val))); }catch(e){}
+  }
 }
 window.toggleSidebar=()=>setState({collapsed:!S.collapsed});
 window.navTo=async(page)=>{setState({page,loading:true});await preload(page);setState({loading:false});};
@@ -1081,7 +1116,8 @@ window.chTab=(t)=>{
   S.selTab=t;
   const m2=S.waterAnalysisMonth??new Date().getMonth();
   const y2=S.waterAnalysisYear??S.selYear;
-  loadData(`water_analysis_${t}_${y2}_${m2}`).then(()=>render());
+  const b2=(S.waterAnalysisBuilding||BUILDINGS_WATER[0]).replace(/[^a-zA-Z0-9ก-๙]/g,"_");
+  loadData(`water_analysis_${t}_${y2}_${m2}_${b2}`).then(()=>render());
 };
 window.chParamTab=(t,bldg)=>{
   S.selParamTab=t;
@@ -1182,15 +1218,25 @@ window.delAnalysisWW=async(docId,id)=>{
   S.data[docId].records=S.data[docId].records.filter(r=>r.id!==id);
   await fsSet(docId,S.data[docId]);render();
 };
+window.chWaterAnalysisBuilding=(v)=>{
+  S.waterAnalysisBuilding=v;
+  const tab=S.selTab||"tap";
+  const m2=S.waterAnalysisMonth??new Date().getMonth();
+  const y2=S.waterAnalysisYear??S.selYear;
+  const docId="water_analysis_"+tab+"_"+y2+"_"+m2+"_"+v.replace(/[^a-zA-Z0-9ก-๙]/g,"_");
+  loadData(docId).then(()=>render());
+};
 window.chWaterAnalysisMonth=(v)=>{
   S.waterAnalysisMonth=+v;
   const tab=S.selTab||"tap";
-  loadData(`water_analysis_${tab}_${S.waterAnalysisYear??S.selYear}_${+v}`).then(()=>render());
+  const b2=(S.waterAnalysisBuilding||BUILDINGS_WATER[0]).replace(/[^a-zA-Z0-9ก-๙]/g,"_");
+  loadData(`water_analysis_${tab}_${S.waterAnalysisYear??S.selYear}_${+v}_${b2}`).then(()=>render());
 };
 window.chWaterAnalysisYear=(v)=>{
   S.waterAnalysisYear=+v;
   const tab=S.selTab||"tap";
-  loadData(`water_analysis_${tab}_${+v}_${S.waterAnalysisMonth??new Date().getMonth()}`).then(()=>render());
+  const b2=(S.waterAnalysisBuilding||BUILDINGS_WATER[0]).replace(/[^a-zA-Z0-9ก-๙]/g,"_");
+  loadData(`water_analysis_${tab}_${+v}_${S.waterAnalysisMonth??new Date().getMonth()}_${b2}`).then(()=>render());
 };
 window.updateWaterAnalysisField=(docId,f,v)=>{
   if(!S.data[docId])S.data[docId]={};
@@ -1318,66 +1364,4 @@ window.exportAnalysisWW=(docId,title)=>{
 async function preload(page){
   const m=S.selMonth,y=S.selYear;
   const ids=[];
-  if(page==="dashboard") ids.push(`ww_research_${y}_${m}`,`ww_sth_${y}_${m}`,`water_usage_${y}_${m}`,`chlorine_start_${y}_${m}`);
-  else if(page==="ww-research-daily"||page==="ww-sth-daily"){
-    const b=page.includes("research")?"research":"sth";
-    ids.push(`ww_${b}_${y}_${m}`);
-    if(S.chartMode==="monthly") for(let i=0;i<12;i++)ids.push(`ww_${b}_${y}_${i}`);
-  }
-  else if(page==="ww-research-param"||page==="ww-sth-param"){
-    const b=page.includes("research")?"research":"sth";
-    const PARAMS=b==="research"?PARAMS_RESEARCH:PARAMS_STH;
-    const pid=S.selParamTab||(PARAMS[0].id);
-    ids.push(`ww_param_${b}_${pid}_${y}_${m}`);
-    if(S.chartMode==="monthly") for(let i=0;i<12;i++)ids.push(`ww_param_${b}_${pid}_${y}_${i}`);
-  }
-  else if(page==="ww-research-analysis"){
-    const m2=S.wwAnalysisMonth??new Date().getMonth();
-    const y2=S.wwAnalysisYear??S.selYear;
-    ids.push(`ww_analysis_research_${y2}_${m2}`);
-  }
-  else if(page==="ww-sth-analysis"){
-    const m2=S.wwAnalysisMonth??new Date().getMonth();
-    const y2=S.wwAnalysisYear??S.selYear;
-    ids.push(`ww_analysis_sth_${y2}_${m2}`);
-  }
-  else if(page==="ww-research-summary"){
-    for(let i=0;i<12;i++)ids.push(`ww_research_${y}_${i}`);
-    for(let i=0;i<12;i++)ids.push(`ww_analysis_research_${y}_${i}`);
-  }
-  else if(page==="ww-sth-summary"){
-    for(let i=0;i<12;i++)ids.push(`ww_sth_${y}_${i}`);
-    for(let i=0;i<12;i++)ids.push(`ww_analysis_sth_${y}_${i}`);
-  }
-  else if(page==="water-usage") ids.push(`water_usage_${y}_${m}`);
-  else if(page==="chlorine-start") ids.push(`chlorine_start_${y}_${m}`);
-  else if(page==="chlorine-end") ids.push(`chlorine_end_${y}_${m}`);
-  else if(page==="water-analysis"){
-    const tab2=S.selTab||"tap";
-    const m2=S.waterAnalysisMonth??new Date().getMonth();
-    const y2=S.waterAnalysisYear??S.selYear;
-    ids.push(`water_analysis_${tab2}_${y2}_${m2}`);
-  }
-  const missing=ids.filter(id=>S.data[id]===undefined);
-  if(missing.length>0){
-    const results=await Promise.all(missing.map(id=>fsGet(id)));
-    missing.forEach((id,i)=>{S.data[id]=results[i];});
-  }
-}
-
-// ── Auth ───────────────────────────────────────────────────────
-onAuthStateChanged(auth,async(user)=>{
-  if(user){
-    setState({loading:true});
-    const profile=await getUserRole(user.uid);
-    S.user=user; S.userRole=profile.role||"viewer"; S.userName=profile.name||user.email;
-    await preload("dashboard");
-    setState({loading:false});
-  } else {
-    S.user=null;S.userRole="viewer";S.userName="";S.data={};
-    setState({loading:false});
-  }
-});
-</script>
-</body>
-</html>
+  if(page==="dashboard") ids.push(`ww_research_${y}_${m}`,`ww_sth_${y}_
