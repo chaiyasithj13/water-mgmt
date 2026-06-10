@@ -35,21 +35,10 @@ function Login(){
           บริหารจัดการน้ำ<br/>อย่างมั่นใจและแม่นยำ</div>
         <p style={{fontSize:15,opacity:.82,marginTop:16,maxWidth:380,lineHeight:1.6}}>
           ติดตามคุณภาพน้ำเสีย น้ำประปา และค่าพารามิเตอร์ของโรงพยาบาลสงขลานครินทร์ ครบในที่เดียว</p>
-        <div style={{display:"flex",gap:24,marginTop:32,alignItems:"flex-start"}}>
-          <div>
-            <div style={{fontFamily:"var(--font-display)",fontSize:24,fontWeight:700}}>2</div>
-            <div style={{fontSize:12.5,opacity:.75}}>ระบบบำบัด</div>
-          </div>
-          <div style={{width:1,background:"rgba(255,255,255,.25)",alignSelf:"stretch",margin:"2px 0"}}/>
-          <div>
-            <div style={{fontFamily:"var(--font-display)",fontSize:14,fontWeight:600,lineHeight:1.5}}>
-              ระบบประปาและระบบบำบัดน้ำเสีย โรงพยาบาล
-            </div>
-            <div style={{fontSize:12.5,opacity:.75,marginTop:6,lineHeight:1.8}}>
-              1. ระบบบำบัดน้ำเสีย อาคารวิจัย<br/>
-              2. ระบบบำบัดน้ำเสีย อาคารรัตนชีวรักษ์ (สธ.)
-            </div>
-          </div>
+        <div style={{display:"flex",gap:24,marginTop:32}}>
+          {[["2","ระบบบำบัด"],["11","พารามิเตอร์"],["100%","ตามเกณฑ์ สธ."]].map(([n,l])=>
+            <div key={l}><div style={{fontFamily:"var(--font-display)",fontSize:24,fontWeight:700}}>{n}</div>
+              <div style={{fontSize:12.5,opacity:.75}}>{l}</div></div>)}
         </div>
       </div>
       <div style={{position:"relative",fontSize:12,opacity:.6}}>© 2569 คณะแพทยศาสตร์ มหาวิทยาลัยสงขลานครินทร์</div>
@@ -126,8 +115,7 @@ function Router({ctx}){
   if(p==="ww-sth-summary") return <WWSummary ctx={ctx} bldg="sth"/>;
   if(p==="ww-research-analysis") return <WWAnalysis ctx={ctx} bldg="research"/>;
   if(p==="ww-sth-analysis") return <WWAnalysis ctx={ctx} bldg="sth"/>;
-  if(p==="water-usage"||p==="water-usage-hosp") return <WaterUsage ctx={ctx}/>;
-  if(p==="water-usage-sth") return <WaterUsageSth ctx={ctx}/>;
+  if(p==="water-usage") return <WaterUsage ctx={ctx}/>;
   if(p==="chlorine-start") return <ChlorineStart ctx={ctx}/>;
   if(p==="chlorine-end") return <ChlorineEnd ctx={ctx}/>;
   if(p==="water-analysis") return <WaterAnalysis ctx={ctx}/>;

@@ -517,52 +517,6 @@ function WWSummary({ctx,bldg}){
   </div>;
 }
 
-
-// ════════ WATER USAGE STH ════════
-function WaterUsageSth({ctx}){
-  const {month:m,year:y,setMonth,setYear,role}=ctx;
-  const admin=role==="admin";
-  const docId=`water_usage_sth_${y}_${m}`;
-  const {data:rows,loading,mutate}=useFsDoc(docId);
-  const days=getDays(m);
-  let total=0;
-  for(let d=1;d<=days;d++) total+=+rows[d]?.sth||0;
-  const avg=total>0?(total/days).toFixed(1):0;
-
-  const chartData={labels:Array.from({length:days},(_,i)=>i+1),datasets:[
-    {...barDataset("อาคารรัตนชีวรักษ์ สธ.",Array.from({length:days},(_,i)=>+rows[i+1]?.sth||0),brandColor("--teal-500"))}]};
-  const chartOpts=baseOpts();
-
-  return <div>
-    <PageHead title="การใช้น้ำประปา — อาคารรัตนชีวรักษ์ (สธ.)" subtitle={`${MN[m]} ${y} · มิเตอร์ 1 จุด — อาคารรัตนชีวรักษ์`}>
-      <MonthPicker month={m} year={y} onMonth={setMonth} onYear={setYear}/>
-    </PageHead>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:13,marginBottom:18}}>
-      <StatCard loading={loading} label="อาคารรัตนชีวรักษ์ สธ." value={fmt(total)} unit="ลบ.ม." icon="droplet" tone="teal"/>
-      <StatCard loading={loading} label="เฉลี่ยต่อวัน" value={avg} unit="ลบ.ม./วัน" icon="trend" tone="brand"/>
-    </div>
-    <div style={{marginBottom:18}}>
-      <ChartCard title="การใช้น้ำรายวัน" loading={loading}>
-        <ChartBox type="bar" data={chartData} options={chartOpts} height={250}/>
-      </ChartCard>
-    </div>
-    <TableCard title="ตารางบันทึกการใช้น้ำ" right={admin?<Tag tone="ok"><Dot tone="ok"/>แก้ไขได้</Tag>:<Tag tone="gray">ดูอย่างเดียว</Tag>}>
-      {loading
-        ? <div style={{padding:30}}><div className="skel" style={{height:300}}/></div>
-        : <table className="dt" key={docId}>
-          <thead><tr><th>วันที่</th><th>อาคารรัตนชีวรักษ์ สธ.<small>ลบ.ม.</small></th></tr></thead>
-          <tbody>
-            {Array.from({length:days},(_,i)=>i+1).map(d=>{
-              return <tr key={d}><td className="day">{d}</td>
-                <td><EditCell rows={rows} d={d} field="sth" admin={admin} mutate={mutate} w={100}/></td>
-              </tr>;})}
-            <tr className="total"><td>รวม</td><td className="calc">{fmt(total)}</td></tr>
-          </tbody>
-        </table>}
-    </TableCard>
-  </div>;
-}
-
 Object.assign(window,{StatCard,ChartCard,TableCard,Legend,EmptyState,EditCell,fmt,
   sumWWFrom,sumWaterFrom,clComplianceFrom,
-  Dashboard,WWDaily,WWParam,WaterUsage,WaterUsageSth,ChlorineStart,ChlorineEnd,WWSummary});
+  Dashboard,WWDaily,WWParam,WaterUsage,ChlorineStart,ChlorineEnd,WWSummary});
