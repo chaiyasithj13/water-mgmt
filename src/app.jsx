@@ -121,7 +121,8 @@ function Router({ctx}){
   if(p==="water-usage-sth") return <WaterUsageSth ctx={ctx}/>;
   if(p==="chlorine-start") return <ChlorineStart ctx={ctx}/>;
   if(p==="chlorine-end") return <ChlorineEnd ctx={ctx}/>;
-  if(p==="water-analysis") return <WaterAnalysis ctx={ctx}/>;
+  if(p==="water-analysis-tap") return <WaterAnalysisTap ctx={ctx}/>;
+  if(p==="water-analysis-ro")  return <WaterAnalysisRo ctx={ctx}/>;
   if(p==="manage-users") return <ManageUsers ctx={ctx}/>;
   return <div>ไม่พบหน้า</div>;
 }
