@@ -35,10 +35,12 @@ function Login(){
           บริหารจัดการน้ำ<br/>อย่างมั่นใจและแม่นยำ</div>
         <p style={{fontSize:15,opacity:.82,marginTop:16,maxWidth:380,lineHeight:1.6}}>
           ติดตามคุณภาพน้ำเสีย น้ำประปา และค่าพารามิเตอร์ของโรงพยาบาลสงขลานครินทร์ ครบในที่เดียว</p>
-        <div style={{display:"flex",gap:24,marginTop:32}}>
-          {[["2","ระบบบำบัด"],["11","พารามิเตอร์"],["100%","ตามเกณฑ์ สธ."]].map(([n,l])=>
-            <div key={l}><div style={{fontFamily:"var(--font-display)",fontSize:24,fontWeight:700}}>{n}</div>
-              <div style={{fontSize:12.5,opacity:.75}}>{l}</div></div>)}
+        <div style={{marginTop:32}}>
+          <div style={{fontSize:13.5,fontWeight:600,opacity:.9,marginBottom:6}}>ระบบประปาและระบบบำบัดน้ำเสีย โรงพยาบาล</div>
+          <div style={{fontSize:12.5,opacity:.75,lineHeight:1.9}}>
+            1. ระบบบำบัดน้ำเสีย อาคารวิจัย<br/>
+            2. ระบบบำบัดน้ำเสีย อาคารรัตนชีวรักษ์ (สธ.)
+          </div>
         </div>
       </div>
       <div style={{position:"relative",fontSize:12,opacity:.6}}>© 2569 คณะแพทยศาสตร์ มหาวิทยาลัยสงขลานครินทร์</div>
@@ -116,6 +118,7 @@ function Router({ctx}){
   if(p==="ww-research-analysis") return <WWAnalysis ctx={ctx} bldg="research"/>;
   if(p==="ww-sth-analysis") return <WWAnalysis ctx={ctx} bldg="sth"/>;
   if(p==="water-usage") return <WaterUsage ctx={ctx}/>;
+  if(p==="water-usage-sth") return <WaterUsageSth ctx={ctx}/>;
   if(p==="chlorine-start") return <ChlorineStart ctx={ctx}/>;
   if(p==="chlorine-end") return <ChlorineEnd ctx={ctx}/>;
   if(p==="water-analysis") return <WaterAnalysis ctx={ctx}/>;
