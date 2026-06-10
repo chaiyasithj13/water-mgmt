@@ -40,6 +40,50 @@ const WW_ANALYSIS_PARAMS = [
   {id:"f_coli",  label:"Fecal Coliforms",               unit:"MPN/100mL",  std:"—"},
 ];
 
+// พารามิเตอร์น้ำประปา (ตามมาตรฐานกรมอนามัย พ.ศ. 2563)
+const PARAMS_TAP_WATER = [
+  {id:"ph",        label:"ความเป็นกรด-ด่าง (pH)",       unit:"",            std:"6.5 – 8.5",   min:6.5, max:8.5},
+  {id:"color",     label:"สีปรากฏ (Apparent Color)",    unit:"Pt-Co",      std:"≤ 15",         max:15},
+  {id:"turbidity", label:"ความขุน (Turbidity)",          unit:"NTU",        std:"≤ 5",          max:5},
+  {id:"tds",       label:"ของแข็งละลายทั้งหมด (TDS)",  unit:"mg/L",       std:"≤ 500",        max:500},
+  {id:"hardness",  label:"ความกระด้าง (Hardness as CaCO₃)", unit:"mg/L",  std:"≤ 300",        max:300},
+  {id:"sulfate",   label:"ซัลเฟต (Sulfate)",             unit:"mg/L",       std:"≤ 250",        max:250},
+  {id:"chloride",  label:"คลอไรด์ (Chloride)",           unit:"mg/L",       std:"≤ 250",        max:250},
+  {id:"nitrate",   label:"ไนเตรต (Nitrate as NO₃)",     unit:"mg/L",       std:"≤ 50",         max:50},
+  {id:"nitrite",   label:"ไนโตรต (Nitrite as NO₂)",     unit:"mg/L",       std:"≤ 3",          max:3},
+  {id:"fluoride",  label:"ฟลูออไรด์ (Fluoride)",         unit:"mg/L",       std:"≤ 0.7",        max:0.7},
+  {id:"iron",      label:"เหล็ก (Iron)",                 unit:"mg/L",       std:"≤ 0.3",        max:0.3},
+  {id:"manganese", label:"แมงกานีส (Manganese)",         unit:"mg/L",       std:"≤ 0.3",        max:0.3},
+  {id:"copper",    label:"ทองแดง (Copper)",              unit:"mg/L",       std:"≤ 1",          max:1},
+  {id:"zinc",      label:"สังกะสี (Zinc)",               unit:"mg/L",       std:"≤ 3",          max:3},
+  {id:"mercury",   label:"ปรอท (Mercury)",               unit:"mg/L",       std:"≤ 0.001",      max:0.001},
+  {id:"lead",      label:"ตะกั่ว (Lead)",                unit:"mg/L",       std:"≤ 0.01",       max:0.01},
+  {id:"arsenic",   label:"สารหนู (Arsenic)",             unit:"mg/L",       std:"≤ 0.01",       max:0.01},
+  {id:"chromium",  label:"โครเมียมรวม (Total Chromium)", unit:"mg/L",      std:"≤ 0.05",       max:0.05},
+  {id:"cadmium",   label:"แคดเมียม (Cadmium)",           unit:"mg/L",       std:"≤ 0.003",      max:0.003},
+  {id:"coliforms", label:"Coliforms",                    unit:"MPN/100 mL", std:"< 1.1"},
+  {id:"e_coli",    label:"Escherichia coli",              unit:"/100 mL",    std:"ไม่พบ"},
+];
+
+// พารามิเตอร์น้ำ RO และน้ำฟอกไต
+const PARAMS_RO_WATER = [
+  {id:"ph",        label:"ความเป็นกรด-ด่าง (pH)",       unit:"",            std:"6.5 – 8.5",   min:6.5, max:8.5},
+  {id:"ts",        label:"ปริมาณวลสารทั้งหมด (TS)",     unit:"mg/L",       std:"≤ 500",        max:500},
+  {id:"color",     label:"สี",                           unit:"HZ",         std:"≤ 20",         max:20},
+  {id:"turbidity", label:"ความขุน",                      unit:"FAU",        std:"≤ 5",          max:5},
+  {id:"hardness",  label:"ความกระด้าง (as CaCO₃)",       unit:"mg/L",       std:"≤ 100",        max:100},
+  {id:"sulfate",   label:"ซัลเฟต",                       unit:"mg/L",       std:"≤ 250",        max:250},
+  {id:"chloride",  label:"คลอไรด์",                      unit:"mg/L",       std:"≤ 250",        max:250},
+  {id:"nitrate",   label:"ไนเตรต (คำนวณเป็นไนโตรเจน)", unit:"mg/L",       std:"≤ 4.0",        max:4},
+  {id:"iron",      label:"เหล็ก",                        unit:"mg/L",       std:"≤ 0.3",        max:0.3},
+  {id:"toxic",     label:"สารพิษอื่นๆ เช่น สารหนู สารตะกั่ว", unit:"mg/L", std:"≤ 0.05",     max:0.05},
+  {id:"fluoride",  label:"ฟลูออไรด์",                    unit:"mg/L",       std:"≤ 0.70",       max:0.70},
+  {id:"coliforms", label:"Coliforms",                    unit:"MPN/100 mL", std:"< 2.2"},
+  {id:"e_coli",    label:"Escherichia coli",              unit:"/100 mL",    std:"ไม่พบ"},
+  {id:"salmonella",label:"Salmonella sp.",               unit:"/100 mL",    std:"ไม่พบ"},
+  {id:"staph",     label:"Staphylococcus aureus",        unit:"CFU/100 mL", std:"< 100"},
+];
+
 const NAV = [
   {type:"item", id:"dashboard", label:"ภาพรวมระบบ", icon:"home"},
   {type:"section", label:"ระบบบำบัดน้ำเสีย"},
@@ -62,7 +106,10 @@ const NAV = [
   ]},
   {type:"item", id:"chlorine-start", label:"คลอรีนต้นทาง (รายวัน)",  icon:"beaker"},
   {type:"item", id:"chlorine-end",   label:"คลอรีนปลายทาง (รายสัปดาห์)", icon:"beaker"},
-  {type:"item", id:"water-analysis", label:"ผลตรวจวิเคราะห์น้ำประปา", icon:"flask"},
+  {type:"group", label:"ผลตรวจวิเคราะห์น้ำ", items:[
+    {id:"water-analysis-tap", label:"ผลตรวจน้ำประปา",          icon:"flask"},
+    {id:"water-analysis-ro",  label:"ผลตรวจน้ำ RO และน้ำฟอกไต", icon:"flask"},
+  ]},
   {type:"section", label:"ผู้ดูแลระบบ", admin:true},
   {type:"item", id:"manage-users",   label:"จัดการผู้ใช้", icon:"users", admin:true},
 ];
@@ -81,9 +128,10 @@ const PAGE_META = {
   "water-usage-sth":{title:"การใช้น้ำประปา — อาคาร สธ.", crumb:["ระบบประปา","ปริมาณการใช้น้ำ"]},
   "chlorine-start":{title:"คลอรีนต้นทาง (รายวัน)", crumb:["ระบบประปา"]},
   "chlorine-end":{title:"คลอรีนปลายทาง (รายสัปดาห์)", crumb:["ระบบประปา"]},
-  "water-analysis":{title:"ผลตรวจวิเคราะห์น้ำประปา", crumb:["ระบบประปา"]},
+  "water-analysis-tap":{title:"ผลตรวจน้ำประปา", crumb:["ระบบประปา","ผลตรวจวิเคราะห์น้ำ"]},
+  "water-analysis-ro":{title:"ผลตรวจน้ำ RO และน้ำฟอกไต", crumb:["ระบบประปา","ผลตรวจวิเคราะห์น้ำ"]},
   "manage-users":{title:"จัดการผู้ใช้", crumb:["ผู้ดูแลระบบ"]},
 };
 
 Object.assign(window,{MN,MS,CY,getDays,BLDG_END,SPOTS,BUILDINGS_WATER,
-  PARAMS_RESEARCH,PARAMS_STH,WW_ANALYSIS_PARAMS,NAV,PAGE_META});
+  PARAMS_RESEARCH,PARAMS_STH,WW_ANALYSIS_PARAMS,PARAMS_TAP_WATER,PARAMS_RO_WATER,NAV,PAGE_META});
