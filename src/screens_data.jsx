@@ -74,7 +74,11 @@ function sumWWFrom(rows,m){const days=getDays(m);let w=0,waste=0,flow=0,out=0,e=
   for(let d=1;d<=days;d++){const r=rows[d];if(r&&(r.water||r.ww_flow||r.elec_kwh)){w+=+r.water||0;waste+=(+r.water||0)*0.8;flow+=+r.ww_flow||0;out+=+r.waste_out||0;e+=+r.elec_kwh||0;cost+=+r.elec_total||0;cl+=+r.chlorine_l||0;clc+=+r.chlorine_cost||0;cnt++;}}
   return {w,waste,flow,out,e,cost,cl,clc,cnt};}
 function sumWaterFrom(rows,m){const days=getDays(m);let h=0,k=0,dm=0,cnt=0;
-  for(let d=1;d<=days;d++){const r=rows[d];if(r&&(r.hospital||r.khuan||r.dorm)){h+=+r.hospital||0;k+=+r.khuan||0;dm+=+r.dorm||0;cnt++;}}
+  for(let d=1;d<=days;d++){const r=rows[d];if(r){
+    const hv=r.hospital_after!=null&&r.hospital_before!=null?(+r.hospital_after||0)-(+r.hospital_before||0):(+r.hospital||0);
+    const kv=r.khuan_after!=null&&r.khuan_before!=null?(+r.khuan_after||0)-(+r.khuan_before||0):(+r.khuan||0);
+    const dv=r.dorm_after!=null&&r.dorm_before!=null?(+r.dorm_after||0)-(+r.dorm_before||0):(+r.dorm||0);
+    if(hv||kv||dv){h+=hv;k+=kv;dm+=dv;cnt++;}}}
   return {h,k,dm,total:h+k+dm,cnt};}
 function clComplianceFrom(rows,m){const days=getDays(m);let ok=0,tot=0;
   for(let d=1;d<=days;d++){const cl=+rows[d]?.free_chlorine;if(!isNaN(cl)&&cl>0){tot++;if(cl>=0.2)ok++;}}return{ok,tot};}
@@ -331,31 +335,42 @@ function WaterUsage({ctx}){
   const days=getDays(m);
   const t=sumWaterFrom(rows,m);
 
-  // Mirror original behavior: auto-link total → ww_research daily.water
-  const mutateLinked = (fn) => {
-    mutate(r=>{ fn(r); });
-    // also push computed total into ww_research_{y}_{m}.water if present row
+  // คำนวณ รวม จาก after - before
+  const calcNet=(r,prefix)=>{
+    const a=r?.[prefix+"_after"],b=r?.[prefix+"_before"];
+    if(a!=null&&a!==""&&b!=null&&b!==""){const v=(+a||0)-(+b||0);return v;}
+    return null;
+  };
+
+  const mutateLinked=(fn)=>{
+    mutate(r=>{fn(r);});
     Object.keys(rows).forEach(d=>{
-      const dn=+d; if(isNaN(dn)) return;
+      const dn=+d;if(isNaN(dn))return;
       const r=rows[d]||{};
-      const total=(+r.hospital||0)+(+r.khuan||0)+(+r.dorm||0);
-      const wwData = window.__cache[wwDocId];
-      if(wwData){
-        if(!wwData[dn]) wwData[dn]={};
-        wwData[dn].water = total>0 ? total : "";
-        debouncedSave(wwDocId, wwData);
-      }
+      const hv=calcNet(r,"hospital")??0;
+      const kv=calcNet(r,"khuan")??0;
+      const dv=calcNet(r,"dorm")??0;
+      const total=hv+kv+dv;
+      const wwData=window.__cache[wwDocId];
+      if(wwData){if(!wwData[dn])wwData[dn]={};wwData[dn].water=total>0?total:"";debouncedSave(wwDocId,wwData);}
     });
   };
 
+  // chart ใช้ค่า net (after-before)
   const chartData={labels:Array.from({length:days},(_,i)=>i+1),datasets:[
-    {...barDataset("โรงพยาบาล",Array.from({length:days},(_,i)=>+rows[i+1]?.hospital||0),brandColor("--brand-500"))},
-    {...barDataset("ควนมดแดง",Array.from({length:days},(_,i)=>+rows[i+1]?.khuan||0),brandColor("--brand-300"))},
-    {...barDataset("หอพัก",Array.from({length:days},(_,i)=>+rows[i+1]?.dorm||0),brandColor("--teal-500"))}]};
+    {...barDataset("โรงพยาบาล",Array.from({length:days},(_,i)=>{const r=rows[i+1]||{};const v=calcNet(r,"hospital");return v!=null?v:0;}),brandColor("--brand-500"))},
+    {...barDataset("ควนมดแดง",Array.from({length:days},(_,i)=>{const r=rows[i+1]||{};const v=calcNet(r,"khuan");return v!=null?v:0;}),brandColor("--brand-300"))},
+    {...barDataset("หอพัก",Array.from({length:days},(_,i)=>{const r=rows[i+1]||{};const v=calcNet(r,"dorm");return v!=null?v:0;}),brandColor("--teal-500"))}]};
   const stackOpts=baseOpts({scales:{x:{stacked:true,grid:{display:false},border:{display:false},ticks:{color:"#94a0b3",font:{family:"Sarabun",size:10},autoSkipPadding:10}},y:{stacked:true,grid:{color:"#eef2f7",drawBorder:false},border:{display:false},ticks:{color:"#94a0b3",font:{family:"Sarabun",size:11}},beginAtZero:true}}});
 
+  const METERS=[
+    {key:"hospital",label:"โรงพยาบาล"},
+    {key:"khuan",   label:"ควนมดแดง"},
+    {key:"dorm",    label:"หอพัก"},
+  ];
+
   return <div>
-    <PageHead title="ปริมาณการใช้น้ำประปา" subtitle={`${MN[m]} ${y} · มิเตอร์ 3 จุด — โรงพยาบาล / ควนมดแดง / หอพัก`}>
+    <PageHead title="การใช้น้ำประปา — โรงพยาบาล" subtitle={`${MN[m]} ${y} · มิเตอร์ 3 จุด — โรงพยาบาล / ควนมดแดง / หอพัก`}>
       <MonthPicker month={m} year={y} onMonth={setMonth} onYear={setYear}/>
     </PageHead>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:13,marginBottom:18}}>
@@ -374,15 +389,47 @@ function WaterUsage({ctx}){
       {loading
         ? <div style={{padding:30}}><div className="skel" style={{height:300}}/></div>
         : <table className="dt" key={docId}>
-          <thead><tr><th>วันที่</th><th>โรงพยาบาล<small>ลบ.ม.</small></th><th>ควนมดแดง<small>ลบ.ม.</small></th><th>หอพัก<small>ลบ.ม.</small></th><th>รวม<small>ลบ.ม.</small></th></tr></thead>
+          <thead>
+            <tr>
+              <th rowSpan="2">วันที่</th>
+              {METERS.map(({label})=><th key={label} colSpan="3">{label}<small>ลบ.ม.</small></th>)}
+              <th rowSpan="2">รวมทั้งหมด<small>ลบ.ม.</small></th>
+            </tr>
+            <tr>
+              {METERS.map(({key})=>[
+                <th key={key+"b"}>มิเตอร์ก่อน</th>,
+                <th key={key+"a"}>มิเตอร์หลัง</th>,
+                <th key={key+"t"}>รวม</th>,
+              ])}
+            </tr>
+          </thead>
           <tbody>
-            {Array.from({length:days},(_,i)=>i+1).map(d=>{const r=rows[d]||{};const tot=(+r.hospital||0)+(+r.khuan||0)+(+r.dorm||0);
-              return <tr key={d}><td className="day">{d}</td>
-                <td><EditCell rows={rows} d={d} field="hospital" admin={admin} mutate={mutateLinked} w={78}/></td>
-                <td><EditCell rows={rows} d={d} field="khuan" admin={admin} mutate={mutateLinked} w={78}/></td>
-                <td><EditCell rows={rows} d={d} field="dorm" admin={admin} mutate={mutateLinked} w={78}/></td>
-                <td className="calc">{tot>0?fmt(tot):"–"}</td></tr>;})}
-            <tr className="total"><td>รวม</td><td>{fmt(t.h)}</td><td>{fmt(t.k)}</td><td>{fmt(t.dm)}</td><td className="calc">{fmt(t.total)}</td></tr>
+            {Array.from({length:days},(_,i)=>i+1).map(d=>{
+              const r=rows[d]||{};
+              const nets=METERS.map(({key})=>calcNet(r,key));
+              const grandTotal=nets.every(v=>v!=null)?nets.reduce((a,v)=>a+v,0):null;
+              return <tr key={d}>
+                <td className="day">{d}</td>
+                {METERS.map(({key},mi)=>{
+                  const net=nets[mi];
+                  return [
+                    <td key={key+"b"}><EditCell rows={rows} d={d} field={key+"_before"} admin={admin} mutate={mutateLinked} w={70}/></td>,
+                    <td key={key+"a"}><EditCell rows={rows} d={d} field={key+"_after"} admin={admin} mutate={mutateLinked} w={70}/></td>,
+                    <td key={key+"t"} className="calc">{net!=null?fmt(net):"–"}</td>,
+                  ];
+                })}
+                <td className="calc">{grandTotal!=null?fmt(grandTotal):"–"}</td>
+              </tr>;
+            })}
+            <tr className="total">
+              <td>รวม</td>
+              {METERS.map(({key})=>[
+                <td key={key+"b"}>–</td>,
+                <td key={key+"a"}>–</td>,
+                <td key={key+"t"} className="calc">{fmt(key==="hospital"?t.h:key==="khuan"?t.k:t.dm)}</td>,
+              ])}
+              <td className="calc">{fmt(t.total)}</td>
+            </tr>
           </tbody>
         </table>}
     </TableCard>
@@ -524,11 +571,18 @@ function WaterUsageSth({ctx}){
   const docId=`water_usage_sth_${y}_${m}`;
   const {data:rows,loading,mutate}=useFsDoc(docId);
   const days=getDays(m);
+
+  const calcNet=(r)=>{
+    const a=r?.sth_after,b=r?.sth_before;
+    if(a!=null&&a!==""&&b!=null&&b!=="") return (+(a)||0)-(+(b)||0);
+    return null;
+  };
+
   let tS=0,cnt=0;
-  for(let d=1;d<=days;d++){const v=+rows[d]?.sth;if(!isNaN(v)&&rows[d]?.sth!==""&&rows[d]?.sth!=null){tS+=v;cnt++;}}
+  for(let d=1;d<=days;d++){const v=calcNet(rows[d]);if(v!=null){tS+=v;cnt++;}}
 
   const chartData={labels:Array.from({length:days},(_,i)=>i+1),datasets:[
-    {...barDataset("อาคารรัตนชีวรักษ์ สธ.",Array.from({length:days},(_,i)=>+rows[i+1]?.sth||0),brandColor("--teal-500"))}]};
+    {...barDataset("อาคารรัตนชีวรักษ์ สธ.",Array.from({length:days},(_,i)=>{const v=calcNet(rows[i+1]);return v!=null?v:0;}),brandColor("--teal-500"))}]};
   const chartOpts=baseOpts({scales:{x:{grid:{display:false},border:{display:false},ticks:{color:"#94a0b3",font:{family:"Sarabun",size:10},autoSkipPadding:10}},y:{grid:{color:"#eef2f7",drawBorder:false},border:{display:false},ticks:{color:"#94a0b3",font:{family:"Sarabun",size:11}},beginAtZero:true}}});
 
   return <div>
@@ -548,13 +602,29 @@ function WaterUsageSth({ctx}){
       {loading
         ? <div style={{padding:30}}><div className="skel" style={{height:300}}/></div>
         : <table className="dt" key={docId}>
-          <thead><tr><th>วันที่</th><th>อาคารรัตนชีวรักษ์ สธ.<small>ลบ.ม.</small></th></tr></thead>
+          <thead>
+            <tr>
+              <th rowSpan="2">วันที่</th>
+              <th colSpan="3">อาคารรัตนชีวรักษ์ สธ.<small>ลบ.ม.</small></th>
+            </tr>
+            <tr>
+              <th>มิเตอร์ก่อน</th>
+              <th>มิเตอร์หลัง</th>
+              <th>รวม</th>
+            </tr>
+          </thead>
           <tbody>
-            {Array.from({length:days},(_,i)=>i+1).map(d=>(
-              <tr key={d}><td className="day">{d}</td>
-                <td><EditCell rows={rows} d={d} field="sth" admin={admin} mutate={mutate} w={90}/></td>
-              </tr>))}
-            <tr className="total"><td>รวม</td><td>{fmt(tS)}</td></tr>
+            {Array.from({length:days},(_,i)=>i+1).map(d=>{
+              const r=rows[d]||{};
+              const net=calcNet(r);
+              return <tr key={d}>
+                <td className="day">{d}</td>
+                <td><EditCell rows={rows} d={d} field="sth_before" admin={admin} mutate={mutate} w={80}/></td>
+                <td><EditCell rows={rows} d={d} field="sth_after" admin={admin} mutate={mutate} w={80}/></td>
+                <td className="calc">{net!=null?fmt(net):"–"}</td>
+              </tr>;
+            })}
+            <tr className="total"><td>รวม</td><td>–</td><td>–</td><td className="calc">{fmt(tS)}</td></tr>
           </tbody>
         </table>}
     </TableCard>
