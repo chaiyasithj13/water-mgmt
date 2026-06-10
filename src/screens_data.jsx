@@ -378,6 +378,7 @@ function WaterUsage({ctx}){
       <StatCard loading={loading} label="ควนมดแดง" value={fmt(t.k)} unit="ลบ.ม." icon="droplet" tone="brand"/>
       <StatCard loading={loading} label="หอพัก" value={fmt(t.dm)} unit="ลบ.ม." icon="droplet" tone="teal"/>
       <StatCard loading={loading} label="รวมทั้งหมด" value={fmt(t.total)} unit="ลบ.ม." icon="drop2" tone="teal"/>
+      <StatCard loading={loading} label="เฉลี่ย/วัน" value={fmt(t.cnt?t.total/t.cnt:0,1)} unit="ลบ.ม." icon="chart" tone="gray"/>
     </div>
     <div style={{marginBottom:18}}>
       <ChartCard title="การใช้น้ำรายวัน (แยกจุด)" loading={loading}
@@ -461,7 +462,7 @@ function ChlorineStart({ctx}){
       {loading
         ? <div style={{padding:30}}><div className="skel" style={{height:300}}/></div>
         : <table className="dt" key={docId}>
-          <thead><tr><th>วันที่</th><th>เวลา</th><th>คลอรีนอิสระ<small>มก./ล</small></th><th>TDS<small>มก./ล</small></th><th>pH</th><th>สถานะ</th><th>หมายเหตุ</th><th>ผู้ตรวจ</th></tr></thead>
+          <thead><tr><th>วันที่</th><th>เวลา</th><th>คลอรีนอิสระ<small>มก./ล</small></th><th>TDS<small>มก./ล</small></th><th>pH</th><th>สถานะ</th><th style={{minWidth:140}}>หมายเหตุ</th><th style={{minWidth:110}}>ผู้ตรวจ</th></tr></thead>
           <tbody>
             {Array.from({length:days},(_,i)=>i+1).map(d=>{const r=rows[d]||{};const cl=+r.free_chlorine;const ok=!isNaN(cl)&&cl>=0.2;const has=!isNaN(cl)&&r.free_chlorine!==""&&r.free_chlorine!=null;
               return <tr key={d}><td className="day">{d}</td>
@@ -470,8 +471,13 @@ function ChlorineStart({ctx}){
                 <td><EditCell rows={rows} d={d} field="tds" admin={admin} mutate={mutate} w={64}/></td>
                 <td><EditCell rows={rows} d={d} field="ph" admin={admin} mutate={mutate} w={52}/></td>
                 <td>{has?<Tag tone={ok?"ok":"bad"}><Dot tone={ok?"ok":"bad"}/>{ok?"ผ่าน":"ต่ำ"}</Tag>:"–"}</td>
-                <td style={{textAlign:"left"}}><EditCell rows={rows} d={d} field="note" admin={admin} mutate={mutate} type="text" w={140}/></td>
-                <td><EditCell rows={rows} d={d} field="inspector" admin={admin} mutate={mutate} type="text" w={70}/></td></tr>;})}
+                <td style={{textAlign:"left"}}><EditCell rows={rows} d={d} field="note" admin={admin} mutate={mutate} type="text" w={130}/></td>
+                <td>{admin
+                  ?<select className="ti" value={r.inspector||""} style={{width:100}} onChange={e=>mutate(rw=>{if(!rw[d])rw[d]={};rw[d].inspector=e.target.value;})}>
+                    <option value=""></option>
+                    {["ธรรมนูญ","วีระยุทธ","สิทธิชัย","ณัฐพัฒน์"].map(n=><option key={n} value={n}>{n}</option>)}
+                  </select>
+                  :<span>{r.inspector||"–"}</span>}</td></tr>;})}
           </tbody>
         </table>}
     </TableCard>
@@ -495,7 +501,7 @@ function ChlorineEnd({ctx}){
     {loading
       ? <Card><div className="skel" style={{height:400}}/></Card>
       : <div style={{display:"flex",flexDirection:"column",gap:14}}>
-        {[1,2,3,4].map(wk=>{
+        {[1,2,3,4,5].map(wk=>{
           const wd=data[wk]||{};
           return <Card key={wk} pad={0} style={{overflow:"hidden"}}>
             <div style={{display:"flex",alignItems:"center",gap:10,padding:"13px 18px",borderBottom:"1px solid var(--border)",flexWrap:"wrap"}}>
@@ -510,17 +516,29 @@ function ChlorineEnd({ctx}){
               </div>
             </div>
             <table className="dt">
-              <thead><tr><th style={{textAlign:"left",paddingLeft:18}}>จุดตรวจ</th><th>คลอรีนอิสระ<small>มก./ล</small></th><th>pH</th><th>สถานะ</th><th>ผู้ตรวจ</th></tr></thead>
+              <thead><tr>
+                <th style={{textAlign:"left",paddingLeft:18}}>อาคาร</th>
+                <th style={{textAlign:"left"}}>จุดเก็บตัวอย่าง</th>
+                <th>คลอรีนอิสระ<small>มก./ล</small></th>
+                <th>TDS<small>มก./ล</small></th>
+                <th>pH</th>
+                <th>สถานะ</th>
+                <th>ผู้ตรวจ</th>
+              </tr></thead>
               <tbody>{BLDG_END.map((sp,si)=>{const r=wd[sp]||{};const cl=+r.free_chlorine;const has=!isNaN(cl)&&r.free_chlorine!==""&&r.free_chlorine!=null;const ok=has&&cl>=0.2;
                 return <tr key={si}>
-                  <td style={{textAlign:"left",paddingLeft:18}}>
-                    <div style={{fontWeight:500,color:"var(--ink-700)"}}>{sp}</div>
-                    <div style={{fontSize:11.5,color:"var(--ink-400)"}}>{SPOTS[sp]}</div>
-                  </td>
+                  <td style={{textAlign:"left",paddingLeft:18,fontWeight:500,color:"var(--ink-700)"}}>{sp}</td>
+                  <td style={{textAlign:"left",fontSize:12,color:"var(--ink-400)"}}>{SPOTS[sp]}</td>
                   <td>{admin?<input className="ti" type="number" step="any" defaultValue={r.free_chlorine??""} key={`${wk}-${sp}-cl-${wd.date||""}`} style={{width:64}} onChange={e=>updateRow(wk,sp,"free_chlorine",e.target.value===""?"":+e.target.value)}/>:<span>{r.free_chlorine??"–"}</span>}</td>
+                  <td>{admin?<input className="ti" type="number" step="any" defaultValue={r.tds??""} key={`${wk}-${sp}-tds-${wd.date||""}`} style={{width:64}} onChange={e=>updateRow(wk,sp,"tds",e.target.value===""?"":+e.target.value)}/>:<span>{r.tds??"–"}</span>}</td>
                   <td>{admin?<input className="ti" type="number" step="any" defaultValue={r.ph??""} key={`${wk}-${sp}-ph-${wd.date||""}`} style={{width:52}} onChange={e=>updateRow(wk,sp,"ph",e.target.value===""?"":+e.target.value)}/>:<span>{r.ph??"–"}</span>}</td>
                   <td>{has?<Tag tone={ok?"ok":"bad"}><Dot tone={ok?"ok":"bad"}/>{ok?"ผ่าน":"ต่ำ"}</Tag>:"–"}</td>
-                  <td>{admin?<input className="ti" type="text" defaultValue={r.inspector??""} key={`${wk}-${sp}-i-${wd.date||""}`} style={{width:70}} onChange={e=>updateRow(wk,sp,"inspector",e.target.value)}/>:<span>{r.inspector||"–"}</span>}</td>
+                  <td>{admin
+                    ?<select className="ti" value={r.inspector||""} key={`${wk}-${sp}-i-${wd.date||""}`} style={{width:100}} onChange={e=>updateRow(wk,sp,"inspector",e.target.value)}>
+                      <option value=""></option>
+                      {["ธรรมนูญ","วีระยุทธ","สิทธิชัย","ณัฐพัฒน์"].map(n=><option key={n} value={n}>{n}</option>)}
+                    </select>
+                    :<span>{r.inspector||"–"}</span>}</td>
                 </tr>;})}</tbody>
             </table>
           </Card>;
