@@ -145,13 +145,20 @@ function WWAnalysis({ctx,bldg}){
 }
 
 // ════════ Water analysis (รพ. ประปา) — per building, per month ════════
-function WaterAnalysis({ctx}){
+// ════════ shared helper for water analysis cards ════════
+const BUILDINGS_TAP = [
+  "อาคารเฉลิมพระบารมี","อาคารศรีเวชวัฒน์","อาคารรัตนชีวรักษ์","อาคาร 100 ปี","อาคารโรงพยาบาล","น้ำเข้าโรงพยาบาล"
+];
+const BUILDINGS_RO = [
+  "น้ำ RO อาคารเฉลิมพระบารมี","น้ำ RO อาคารศรีเวชวัฒน์","น้ำ RO อาคารรัตนชีวรักษ์","น้ำฟอกไต อาคาร 100 ปี","น้ำฟอกไต อาคารเฉลิมพระบารมี"
+];
+
+function WaterAnalysisBase({ctx,pageTitle,buildings,params,docPrefix}){
   const {month:m,year:y,setMonth,setYear,role}=ctx;
   const admin=role==="admin";
-  const [tab,setTab]=useState("tap"); // tap = น้ำประปา; could expand
-  const [bldg,setBldg]=useState(BUILDINGS_WATER[0]);
+  const [bldg,setBldg]=useState(buildings[0]);
   const bldgKey=bldg.replace(/[^a-zA-Z0-9ก-๙]/g,"_");
-  const docId=`water_analysis_${tab}_${y}_${m}_${bldgKey}`;
+  const docId=`${docPrefix}_${y}_${m}_${bldgKey}`;
   const {data:cur,loading}=useFsDoc(docId);
   const [,force]=useState(0);
   const update=(f,v)=>{
@@ -159,16 +166,18 @@ function WaterAnalysis({ctx}){
     window.__cache[docId][f]=v;
     debouncedSave(docId,window.__cache[docId]);
   };
-
-  const status=(p,v)=>{ if(v==null||v===""||p.std==="—")return null;
+  const status=(p,v)=>{
+    if(v==null||v===""||p.std==="ไม่พบ"||p.std==="—")return null;
     const num=+v; if(isNaN(num))return null;
     if(p.min!=null&&num<p.min) return "bad";
     if(p.max!=null&&num>p.max) return "bad";
     if(p.max!=null&&num>p.max*0.85) return "warn";
-    return "ok"; };
+    return "ok";
+  };
+  const isText=(id)=>["coliforms","e_coli","salmonella","staph","t_coli","f_coli"].includes(id);
 
   return <div>
-    <PageHead title="ผลตรวจวิเคราะห์น้ำประปา" subtitle={`${MN[m]} ${y} · เลือกอาคารและกรอกผลตรวจ`}>
+    <PageHead title={pageTitle} subtitle={`${MN[m]} ${y} · เลือกอาคารและกรอกผลตรวจ`}>
       <MonthPicker month={m} year={y} onMonth={setMonth} onYear={setYear}/>
     </PageHead>
 
@@ -176,7 +185,7 @@ function WaterAnalysis({ctx}){
       <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
         <span style={{fontSize:12.5,fontWeight:600,color:"var(--ink-600)"}}>อาคาร:</span>
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          {BUILDINGS_WATER.map(b=><button key={b} className={"tabchip"+(bldg===b?" on":"")} onClick={()=>setBldg(b)}>{b}</button>)}
+          {buildings.map(b=><button key={b} className={"tabchip"+(bldg===b?" on":"")} onClick={()=>setBldg(b)}>{b}</button>)}
         </div>
       </div>
     </Card>
@@ -200,7 +209,7 @@ function WaterAnalysis({ctx}){
 
       {loading?<div style={{padding:30}}><div className="skel" style={{height:200}}/></div>
         :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:12,padding:14}}>
-          {WW_ANALYSIS_PARAMS.map(p=>{
+          {params.map(p=>{
             const v=cur[p.id]; const s=status(p,v);
             const toneBg={ok:"var(--ok-bg)",warn:"var(--warn-bg)",bad:"var(--bad-bg)"}[s]||"var(--surface-2)";
             const toneBd={ok:"var(--ok-border)",warn:"var(--warn-border)",bad:"var(--bad-border)"}[s]||"var(--border)";
@@ -212,8 +221,8 @@ function WaterAnalysis({ctx}){
               </div>
               <div style={{display:"flex",alignItems:"baseline",gap:5,marginBottom:8}}>
                 {admin
-                  ?<input className="num" type={p.id==="t_coli"||p.id==="f_coli"?"text":"number"} step="any" defaultValue={v??""}
-                    key={`${docId}-${p.id}`} onChange={e=>{const val=e.target.value;update(p.id,p.id==="t_coli"||p.id==="f_coli"?val:(val===""?"":+val));force(x=>x+1);}}
+                  ?<input className="num" type={isText(p.id)?"text":"number"} step="any" defaultValue={v??""}
+                    key={`${docId}-${p.id}`} onChange={e=>{const val=e.target.value;update(p.id,isText(p.id)?val:(val===""?"":+val));force(x=>x+1);}}
                     style={{flex:1,minWidth:0,padding:"5px 8px",fontFamily:"var(--font-display)",fontSize:18,fontWeight:700,color:"var(--ink-900)",border:"1px solid var(--border-strong)",borderRadius:6,outline:"none"}}/>
                   :<div className="num" style={{fontFamily:"var(--font-display)",fontSize:22,fontWeight:700,color:"var(--ink-900)",lineHeight:1}}>{v??"–"}</div>}
                 <div style={{fontSize:11.5,color:"var(--ink-400)"}}>{p.unit}</div>
@@ -224,6 +233,16 @@ function WaterAnalysis({ctx}){
         </div>}
     </Card>
   </div>;
+}
+
+function WaterAnalysisTap({ctx}){
+  return <WaterAnalysisBase ctx={ctx} pageTitle="ผลตรวจน้ำประปา"
+    buildings={BUILDINGS_TAP} params={PARAMS_TAP_WATER} docPrefix="water_analysis_tap"/>;
+}
+
+function WaterAnalysisRo({ctx}){
+  return <WaterAnalysisBase ctx={ctx} pageTitle="ผลตรวจน้ำ RO และน้ำฟอกไต"
+    buildings={BUILDINGS_RO} params={PARAMS_RO_WATER} docPrefix="water_analysis_ro"/>;
 }
 
 // ════════ MANAGE USERS — create new login + role ════════
@@ -343,4 +362,4 @@ function NewUserModal({onClose}){
   </div>;
 }
 
-Object.assign(window,{WWAnalysis,WaterAnalysis,ManageUsers,NewUserModal});
+Object.assign(window,{WWAnalysis,WaterAnalysisTap,WaterAnalysisRo,ManageUsers,NewUserModal});
