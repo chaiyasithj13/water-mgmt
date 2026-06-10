@@ -569,6 +569,7 @@ function WaterUsageSth({ctx}){
   const {month:m,year:y,setMonth,setYear,role}=ctx;
   const admin=role==="admin";
   const docId=`water_usage_sth_${y}_${m}`;
+  const wwSthDocId=`ww_sth_${y}_${m}`;
   const {data:rows,loading,mutate}=useFsDoc(docId);
   const days=getDays(m);
 
@@ -576,6 +577,18 @@ function WaterUsageSth({ctx}){
     const a=r?.sth_after,b=r?.sth_before;
     if(a!=null&&a!==""&&b!=null&&b!=="") return (+(a)||0)-(+(b)||0);
     return null;
+  };
+
+  // link net → ww_sth daily.water อัตโนมัติ
+  const mutateLinked=(fn)=>{
+    mutate(r=>{fn(r);});
+    Object.keys(rows).forEach(d=>{
+      const dn=+d;if(isNaN(dn))return;
+      const r=rows[d]||{};
+      const net=calcNet(r);
+      const wwData=window.__cache[wwSthDocId];
+      if(wwData){if(!wwData[dn])wwData[dn]={};wwData[dn].water=net!=null&&net>0?net:"";debouncedSave(wwSthDocId,wwData);}
+    });
   };
 
   let tS=0,cnt=0;
@@ -619,8 +632,8 @@ function WaterUsageSth({ctx}){
               const net=calcNet(r);
               return <tr key={d}>
                 <td className="day">{d}</td>
-                <td><EditCell rows={rows} d={d} field="sth_before" admin={admin} mutate={mutate} w={80}/></td>
-                <td><EditCell rows={rows} d={d} field="sth_after" admin={admin} mutate={mutate} w={80}/></td>
+                <td><EditCell rows={rows} d={d} field="sth_before" admin={admin} mutate={mutateLinked} w={80}/></td>
+                <td><EditCell rows={rows} d={d} field="sth_after" admin={admin} mutate={mutateLinked} w={80}/></td>
                 <td className="calc">{net!=null?fmt(net):"–"}</td>
               </tr>;
             })}
