@@ -90,46 +90,98 @@ function Dashboard({ctx}){
   const isWW=sys!=="water";
   const bldg=sys==="ww-sth"?"sth":"research";
 
-  // load 12 months of selected system
-  const ids = isWW
-    ? MN.map((_,mi)=>`ww_${bldg}_${y}_${mi}`)
-    : [...MN.map((_,mi)=>`water_usage_${y}_${mi}`), ...MN.map((_,mi)=>`chlorine_start_${y}_${mi}`)];
+  // load 12 months
+  const idsWW=MN.map((_,mi)=>`ww_${bldg}_${y}_${mi}`);
+  const idsWater=[...MN.map((_,mi)=>`water_usage_${y}_${mi}`),...MN.map((_,mi)=>`water_usage_sth_${y}_${mi}`)];
+  const ids=isWW?idsWW:idsWater;
   const {map,loading}=useFsDocs(ids);
 
-  const monthsWW = isWW ? MN.map((_,mi)=>sumWWFrom(map[`ww_${bldg}_${y}_${mi}`]||{},mi)) : [];
-  const monthsWater = !isWW ? MN.map((_,mi)=>sumWaterFrom(map[`water_usage_${y}_${mi}`]||{},mi)) : [];
-  const cur = isWW ? monthsWW[m] : monthsWater[m];
-  const prev = isWW ? monthsWW[(m+11)%12] : monthsWater[(m+11)%12];
+  const monthsWW=isWW?MN.map((_,mi)=>sumWWFrom(map[`ww_${bldg}_${y}_${mi}`]||{},mi)):[];
+  const monthsWater=!isWW?MN.map((_,mi)=>sumWaterFrom(map[`water_usage_${y}_${mi}`]||{},mi)):[];
+  const cur=isWW?monthsWW[m]:monthsWater[m];
+  const prev=isWW?monthsWW[(m+11)%12]:monthsWater[(m+11)%12];
   const pct=(a,b)=>b?(((a-b)/b)*100).toFixed(1):0;
+
+  // สธ. monthly net water
+  const sthMonthly=!isWW?MN.map((_,mi)=>{
+    const rows=map[`water_usage_sth_${y}_${mi}`]||{};
+    const days=getDays(mi);
+    let t=0,c=0;
+    for(let d=1;d<=days;d++){const a=rows[d]?.sth_after,b=rows[d]?.sth_before;if(a!=null&&b!=null){const v=(+a||0)-(+b||0);t+=v;c++;}}
+    return{total:t,cnt:c};
+  }):[];
+  const sthCur=!isWW?sthMonthly[m]:{total:0,cnt:0};
 
   let cards;
   if(isWW){
     cards=[
       {label:"น้ำประปาที่ใช้",value:fmt(cur.w),unit:"ลบ.ม.",icon:"droplet",tone:"brand",trend:prev.w?Math.abs(pct(cur.w,prev.w))+"%":null,trendUp:cur.w>=prev.w},
       {label:"น้ำเสียเข้าระบบ",value:fmt(cur.waste,1),unit:"ลบ.ม.",icon:"drop2",tone:"teal"},
+      {label:"น้ำเสีย (Flowmeter)",value:fmt(cur.flow,1),unit:"ลบ.ม.",icon:"drop2",tone:"teal"},
       {label:"ค่าไฟฟ้า",value:fmt(cur.cost,0),unit:"บาท",icon:"bolt",tone:"amber",trend:prev.cost?Math.abs(pct(cur.cost,prev.cost))+"%":null,trendUp:cur.cost<prev.cost},
       {label:"คลอรีนที่ใช้",value:fmt(cur.cl,1),unit:"ลิตร",icon:"beaker",tone:"teal"},
     ];
   } else {
-    const c = clComplianceFrom(map[`chlorine_start_${y}_${m}`]||{}, m);
     cards=[
       {label:"โรงพยาบาล",value:fmt(cur.h),unit:"ลบ.ม.",icon:"droplet",tone:"brand"},
-      {label:"รวมทั้งหมด",value:fmt(cur.total),unit:"ลบ.ม.",icon:"drop2",tone:"teal",trend:prev.total?Math.abs(pct(cur.total,prev.total))+"%":null,trendUp:cur.total>=prev.total},
-      {label:"เฉลี่ยต่อวัน",value:fmt(cur.cnt?cur.total/cur.cnt:0),unit:"ลบ.ม.",icon:"chart",tone:"gray"},
-      {label:"คลอรีนผ่านเกณฑ์",value:c.tot?Math.round(c.ok/c.tot*100):0,unit:"%",icon:"shield",tone:c.tot&&c.ok/c.tot<.9?"amber":"teal",sub:c.tot?`${c.ok}/${c.tot} วัน`:"ไม่มีข้อมูล"},
+      {label:"ควนมดแดง",value:fmt(cur.k),unit:"ลบ.ม.",icon:"droplet",tone:"brand"},
+      {label:"หอพัก",value:fmt(cur.dm),unit:"ลบ.ม.",icon:"droplet",tone:"brand"},
+      {label:"อาคาร สธ.",value:fmt(sthCur.total),unit:"ลบ.ม.",icon:"droplet",tone:"teal"},
+      {label:"รวมทั้งหมด",value:fmt(cur.total+sthCur.total),unit:"ลบ.ม.",icon:"drop2",tone:"teal"},
+      {label:"เฉลี่ยต่อวัน (รพ.)",value:fmt(cur.cnt?cur.total/cur.cnt:0),unit:"ลบ.ม.",icon:"chart",tone:"gray"},
     ];
   }
 
-  const trendData={labels:MS,datasets:isWW?[
-    {...areaDataset("น้ำประปา",monthsWW.map(x=>+x.w.toFixed(0)),brandColor("--brand-500"),"rgba(31,116,186,.22)","rgba(31,116,186,0)")},
-    {...areaDataset("น้ำเสีย",monthsWW.map(x=>+x.waste.toFixed(0)),brandColor("--teal-500"),"rgba(15,138,114,.18)","rgba(15,138,114,0)")},
-  ]:[
-    {...barDataset("โรงพยาบาล",monthsWater.map(x=>x.h),brandColor("--brand-500"))},
-    {...barDataset("ควนมดแดง",monthsWater.map(x=>x.k),brandColor("--brand-300"))},
-    {...barDataset("หอพัก",monthsWater.map(x=>x.dm),brandColor("--teal-500"))},
+  // WW trend chart — toggle
+  const wwSeries=[
+    {key:"water",label:"น้ำประปา",color:brandColor("--brand-500"),bg:"rgba(31,116,186,.22)",bg2:"rgba(31,116,186,0)",data:monthsWW.map(x=>+x.w.toFixed(0))},
+    {key:"waste",label:"น้ำเสีย",color:brandColor("--teal-500"),bg:"rgba(15,138,114,.18)",bg2:"rgba(15,138,114,0)",data:monthsWW.map(x=>+x.waste.toFixed(0))},
+    {key:"flow",label:"น้ำเสีย (Flowmeter)",color:"#e05c00",bg:"rgba(224,92,0,.15)",bg2:"rgba(224,92,0,0)",data:monthsWW.map(x=>+x.flow.toFixed(1))},
+  ];
+  const waterSeries=[
+    {key:"hosp",label:"โรงพยาบาล",color:brandColor("--brand-500")},
+    {key:"kuan",label:"ควนมดแดง",color:brandColor("--brand-300")},
+    {key:"dorm",label:"หอพัก",color:brandColor("--teal-500")},
+    {key:"sth",label:"อาคาร สธ.",color:"#7c3aed"},
+  ];
+  const [wwVis,setWwVis]=useState({water:true,waste:true,flow:true});
+  const [waterVis,setWaterVis]=useState({hosp:true,kuan:true,dorm:true,sth:true});
+  const tWwVis=(k)=>setWwVis(v=>({...v,[k]:!v[k]}));
+  const tWaterVis=(k)=>setWaterVis(v=>({...v,[k]:!v[k]}));
+
+  const trendData=isWW
+    ?{labels:MS,datasets:wwSeries.filter(s=>wwVis[s.key]).map(s=>({...areaDataset(s.label,s.data,s.color,s.bg,s.bg2)}))}
+    :{labels:MS,datasets:[
+        waterVis.hosp&&{...barDataset("โรงพยาบาล",monthsWater.map(x=>x.h),brandColor("--brand-500"))},
+        waterVis.kuan&&{...barDataset("ควนมดแดง",monthsWater.map(x=>x.k),brandColor("--brand-300"))},
+        waterVis.dorm&&{...barDataset("หอพัก",monthsWater.map(x=>x.dm),brandColor("--teal-500"))},
+        waterVis.sth&&{...barDataset("อาคาร สธ.",sthMonthly.map(x=>x.total),brandColor("--purple-500")||"#7c3aed")},
+      ].filter(Boolean)};
+  const trendOpts=baseOpts(!isWW?{scales:{x:{stacked:true,grid:{display:false},border:{display:false},ticks:{color:"#94a0b3",font:{family:"Sarabun",size:11}}},y:{stacked:true,grid:{color:"#eef2f7",drawBorder:false},border:{display:false},ticks:{color:"#94a0b3",font:{family:"Sarabun",size:11}},beginAtZero:true}}}:{});
+
+  // mixed chart: bar=การใช้ไฟฟ้า, line=ค่าไฟฟ้า
+  const elecData={labels:MS,datasets:[
+    {type:"bar",label:"การใช้ไฟฟ้า (kWh)",data:monthsWW.map(x=>+x.e.toFixed(0)),backgroundColor:brandColor("--warn")+"99",borderColor:brandColor("--warn"),borderWidth:1,yAxisID:"y"},
+    {type:"line",label:"ค่าไฟฟ้า (บาท)",data:monthsWW.map(x=>+x.cost.toFixed(0)),borderColor:"#e53e3e",borderWidth:2,pointRadius:3,fill:false,tension:0.3,yAxisID:"y2"},
   ]};
-  const trendOpts=baseOpts(isWW?{}:{scales:{x:{stacked:true,grid:{display:false},border:{display:false},ticks:{color:"#94a0b3",font:{family:"Sarabun",size:11}}},y:{stacked:true,grid:{color:"#eef2f7",drawBorder:false},border:{display:false},ticks:{color:"#94a0b3",font:{family:"Sarabun",size:11}},beginAtZero:true}}});
-  const elecData={labels:MS,datasets:[{...barDataset("ค่าไฟฟ้า",monthsWW.map(x=>+x.cost.toFixed(0)),brandColor("--warn"))}]};
+  const elecOpts=baseOpts({scales:{
+    x:{grid:{display:false},border:{display:false},ticks:{color:"#94a0b3",font:{family:"Sarabun",size:11},autoSkipPadding:0,maxRotation:0}},
+    y:{beginAtZero:true,position:"left",title:{display:true,text:"kWh"},grid:{color:"#eef2f7",drawBorder:false},border:{display:false},ticks:{color:"#94a0b3",font:{family:"Sarabun",size:10}}},
+    y2:{beginAtZero:true,position:"right",title:{display:true,text:"บาท"},grid:{drawOnChartArea:false},border:{display:false},ticks:{color:"#e53e3e",font:{family:"Sarabun",size:10}}},
+  }});
+
+  const toggleBtns=(series,vis,toggle)=>(
+    <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+      {series.map(s=>(
+        <button key={s.key} onClick={()=>toggle(s.key)}
+          style={{display:"flex",alignItems:"center",gap:5,padding:"3px 10px",borderRadius:99,fontSize:12,fontWeight:600,cursor:"pointer",
+            background:vis[s.key]?(s.bg||s.color+"22"):"var(--surface-2)",
+            border:`1.5px solid ${vis[s.key]?s.color:"var(--border)"}`,
+            color:vis[s.key]?s.color:"var(--ink-400)",transition:"all .15s"}}>
+          <span style={{width:8,height:8,borderRadius:"50%",background:vis[s.key]?s.color:"var(--border)",display:"inline-block"}}/>
+          {s.label}
+        </button>))}
+    </div>);
 
   return <div>
     <PageHead title="ภาพรวมระบบ" subtitle="สรุปสถานะการจัดการน้ำของโรงพยาบาลแบบเรียลไทม์">
@@ -151,11 +203,11 @@ function Dashboard({ctx}){
 
     <div style={{display:"grid",gridTemplateColumns:isWW?"1.55fr 1fr":"1fr",gap:16,marginBottom:18}}>
       <ChartCard title={`แนวโน้มรายเดือน — ปีงบประมาณ ${y}`} loading={loading}
-        right={<Legend items={isWW?[{c:"var(--brand-500)",l:"น้ำประปา"},{c:"var(--teal-500)",l:"น้ำเสีย"}]:[{c:"var(--brand-500)",l:"ร.พ."},{c:"var(--brand-300)",l:"ควนมดแดง"},{c:"var(--teal-500)",l:"หอพัก"}]}/>}>
+        right={isWW?toggleBtns(wwSeries,wwVis,tWwVis):toggleBtns(waterSeries,waterVis,tWaterVis)}>
         <ChartBox type={isWW?"line":"bar"} data={trendData} options={trendOpts} height={260}/>
       </ChartCard>
-      {isWW&&<ChartCard title="ค่าไฟฟ้ารายเดือน" right={<Tag tone="warn">บาท</Tag>} loading={loading}>
-        <ChartBox type="bar" data={elecData} options={baseOpts()} height={260}/>
+      {isWW&&<ChartCard title="การใช้ไฟฟ้าและค่าไฟฟ้ารายเดือน" loading={loading}>
+        <ChartBox type="bar" data={elecData} options={elecOpts} height={260}/>
       </ChartCard>}
     </div>
 
@@ -164,22 +216,22 @@ function Dashboard({ctx}){
         ? <div style={{padding:30}}><div className="skel" style={{height:340}}/></div>
         : <table className="dt">
           <thead>{isWW
-            ?<tr><th style={{textAlign:"left"}}>เดือน</th><th>น้ำประปา<small>ลบ.ม.</small></th><th>น้ำเสีย<small>ลบ.ม.</small></th><th>Flowmeter<small>ลบ.ม.</small></th><th>น้ำทิ้ง<small>ลบ.ม.</small></th><th>ไฟฟ้า<small>kWh</small></th><th>ค่าไฟ<small>บาท</small></th><th>คลอรีน<small>ลิตร</small></th></tr>
-            :<tr><th style={{textAlign:"left"}}>เดือน</th><th>โรงพยาบาล<small>ลบ.ม.</small></th><th>ควนมดแดง<small>ลบ.ม.</small></th><th>หอพัก<small>ลบ.ม.</small></th><th>รวม<small>ลบ.ม.</small></th><th>คลอรีนผ่านเกณฑ์</th><th>เฉลี่ย/วัน<small>ลบ.ม.</small></th></tr>}
+            ?<tr><th style={{textAlign:"left"}}>เดือน</th><th>น้ำประปา<small>ลบ.ม.</small></th><th>น้ำเสีย<small>ลบ.ม.</small></th><th>น้ำเสีย (Flowmeter)<small>ลบ.ม.</small></th><th>น้ำทิ้ง<small>ลบ.ม.</small></th><th>การใช้ไฟฟ้า<small>kWh</small></th><th>ค่าไฟฟ้า<small>บาท</small></th><th>คลอรีน<small>ลิตร</small></th><th>ค่าคลอรีน<small>บาท</small></th></tr>
+            :<tr><th style={{textAlign:"left"}}>เดือน</th><th>โรงพยาบาล<small>ลบ.ม.</small></th><th>ควนมดแดง<small>ลบ.ม.</small></th><th>หอพัก<small>ลบ.ม.</small></th><th>รวม<small>ลบ.ม.</small></th><th>เฉลี่ย/วัน (รพ.)<small>ลบ.ม.</small></th><th>อาคาร สธ.<small>ลบ.ม.</small></th></tr>}
           </thead>
           <tbody>{MN.map((mn,mi)=>{
             if(isWW){const x=monthsWW[mi],e=x.cnt===0;
               return <tr key={mi} style={{opacity:e?.4:1}}>
                 <td className="day" style={{textAlign:"left",width:"auto",paddingLeft:16}}>{mn}</td>
                 <td>{e?"–":fmt(x.w)}</td><td>{e?"–":fmt(x.waste,1)}</td><td>{e?"–":fmt(x.flow,1)}</td><td>{e?"–":fmt(x.out,1)}</td>
-                <td>{e?"–":fmt(x.e)}</td><td>{e?"–":fmt(x.cost,0)}</td><td>{e?"–":fmt(x.cl,1)}</td></tr>;
-            } else {const x=monthsWater[mi],c=clComplianceFrom(map[`chlorine_start_${y}_${mi}`]||{},mi),e=x.cnt===0;
-              return <tr key={mi} style={{opacity:e?.4:1}}>
+                <td>{e?"–":fmt(x.e)}</td><td>{e?"–":fmt(x.cost,0)}</td><td>{e?"–":fmt(x.cl,1)}</td><td>{e?"–":fmt(x.clc,0)}</td></tr>;
+            } else {const x=monthsWater[mi],s=sthMonthly[mi],e=x.cnt===0;
+              return <tr key={mi} style={{opacity:e&&s.cnt===0?.4:1}}>
                 <td className="day" style={{textAlign:"left",width:"auto",paddingLeft:16}}>{mn}</td>
                 <td>{e?"–":fmt(x.h)}</td><td>{e?"–":fmt(x.k)}</td><td>{e?"–":fmt(x.dm)}</td>
                 <td className="calc">{e?"–":fmt(x.total)}</td>
-                <td>{c.tot?<Tag tone={c.ok/c.tot>=.9?"ok":"warn"}>{c.ok}/{c.tot} ({Math.round(c.ok/c.tot*100)}%)</Tag>:"–"}</td>
-                <td>{e?"–":fmt(x.cnt?x.total/x.cnt:0,1)}</td></tr>;
+                <td>{e?"–":fmt(x.cnt?x.total/x.cnt:0,1)}</td>
+                <td>{s.cnt>0?fmt(s.total):"–"}</td></tr>;
             }})}</tbody>
         </table>}
     </TableCard>
