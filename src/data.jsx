@@ -12,18 +12,18 @@ const SPOTS = {"อาคารโรงพยาบาล":"ห้องน้�
 const BUILDINGS_WATER = ["อาคารโรงพยาบาล","อาคารเฉลิมพระบารมี (ส่วนหน้า)","อาคารเฉลิมพระบารมี (ส่วนหลัง)","อาคาร 100 ปี","อาคารรัตนชีวรักษ์ (สธ.)","อาคารศรีเวชวัฒน์","หอพักแพทย์"];
 
 const PARAMS_RESEARCH = [
-  {id:"ph",   label:"pH",       unit:"",     std:"5.5–9.0",  tanks:[{g:"EQ",ids:["EQ1","EQ2"]},{g:"Aeration",ids:["AE1","AE2","AE3","AE4"]},{g:"Effluent",ids:["EFF"]}]},
-  {id:"tds",  label:"TDS",      unit:"mg/L", std:"≤1,000",   tanks:[{g:"EQ",ids:["EQ1","EQ2"]},{g:"Effluent",ids:["EFF"]}]},
-  {id:"cl",   label:"คลอรีน",   unit:"mg/L", std:"≤1.0",     tanks:[{g:"Effluent",ids:["EFF"]}]},
-  {id:"temp", label:"อุณหภูมิ", unit:"°C",   std:"—",        tanks:[{g:"EQ",ids:["EQ1","EQ2"]},{g:"Aeration",ids:["AE1","AE2","AE3","AE4"]},{g:"Effluent",ids:["EFF"]}]},
-  {id:"sv30", label:"SV30",     unit:"ml/L", std:"—",        tanks:[{g:"Aeration",ids:["AE1","AE2","AE3","AE4"]}]},
-  {id:"do",   label:"DO",       unit:"mg/L", std:"≥2.0",     tanks:[{g:"Aeration",ids:["AE1","AE2","AE3","AE4"]}]},
+  {id:"ph",   label:"pH",       unit:"",     std:"5.5–9.0",  stdMin:5.5, stdMax:9.0, tanks:[{g:"EQ",ids:["EQ1","EQ2"]},{g:"Aeration",ids:["AE1","AE2","AE3","AE4"]},{g:"Effluent",ids:["EFF"]}]},
+  {id:"tds",  label:"TDS",      unit:"mg/L", std:"≤1,000",   stdMax:1000,            tanks:[{g:"EQ",ids:["EQ1","EQ2"]},{g:"Effluent",ids:["EFF"]}]},
+  {id:"cl",   label:"คลอรีน",   unit:"mg/L", std:"≤1.0",     stdMax:1.0,             tanks:[{g:"Effluent",ids:["EFF"]}]},
+  {id:"temp", label:"อุณหภูมิ", unit:"°C",   std:"—",                                tanks:[{g:"EQ",ids:["EQ1","EQ2"]},{g:"Aeration",ids:["AE1","AE2","AE3","AE4"]},{g:"Effluent",ids:["EFF"]}]},
+  {id:"sv30", label:"SV30",     unit:"ml/L", std:"200–500",  stdMin:200, stdMax:500, tanks:[{g:"Aeration",ids:["AE1","AE2","AE3","AE4"]}]},
+  {id:"do",   label:"DO",       unit:"mg/L", std:"≥2.0",     stdMin:2.0,             tanks:[{g:"Aeration",ids:["AE1","AE2","AE3","AE4"]}]},
 ];
 const PARAMS_STH = [
-  {id:"ph",  label:"pH",     unit:"",     std:"5.5–9.0", tanks:[{g:"EQ",ids:["EQ"]},{g:"Aeration",ids:["AE"]},{g:"Effluent",ids:["EFF"]}]},
-  {id:"tds", label:"TDS",    unit:"mg/L", std:"≤1,000",  tanks:[{g:"EQ",ids:["EQ"]},{g:"Effluent",ids:["EFF"]}]},
-  {id:"cl",  label:"คลอรีน", unit:"mg/L", std:"≤1.0",    tanks:[{g:"Effluent",ids:["EFF"]}]},
-  {id:"do",  label:"DO",     unit:"mg/L", std:"≥2.0",    tanks:[{g:"Aeration",ids:["AE"]}]},
+  {id:"ph",  label:"pH",     unit:"",     std:"5.5–9.0", stdMin:5.5, stdMax:9.0, tanks:[{g:"EQ",ids:["EQ"]},{g:"Aeration",ids:["AE"]},{g:"Effluent",ids:["EFF"]}]},
+  {id:"tds", label:"TDS",    unit:"mg/L", std:"≤1,000",  stdMax:1000,            tanks:[{g:"EQ",ids:["EQ"]},{g:"Effluent",ids:["EFF"]}]},
+  {id:"cl",  label:"คลอรีน", unit:"mg/L", std:"≤1.0",    stdMax:1.0,             tanks:[{g:"Effluent",ids:["EFF"]}]},
+  {id:"do",  label:"DO",     unit:"mg/L", std:"≥2.0",    stdMin:2.0,             tanks:[{g:"Aeration",ids:["AE"]}]},
 ];
 
 const WW_ANALYSIS_PARAMS = [
