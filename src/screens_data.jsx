@@ -197,11 +197,16 @@ function WWDaily({ctx,bldg}){
   const t=sumWWFrom(rows,m);
 
   const [mode,setMode]=useState("daily");
+  const [vis,setVis]=useState({water:true,waste:true,flow:true});
+  const toggleVis=(k)=>setVis(v=>({...v,[k]:!v[k]}));
+
+  const allDaily=[
+    {key:"water", label:"น้ำประปา",           color:brandColor("--brand-500"), bg:"rgba(31,116,186,.2)",  bg2:"rgba(31,116,186,0)",  data:Array.from({length:days},(_,i)=>+rows[i+1]?.water||0)},
+    {key:"waste", label:"น้ำเสีย",             color:brandColor("--teal-500"),  bg:"rgba(15,138,114,.18)", bg2:"rgba(15,138,114,0)",  data:Array.from({length:days},(_,i)=>+(rows[i+1]?.water||0)*0.8)},
+    {key:"flow",  label:"น้ำเสีย (Flowmeter)", color:"#e05c00",                 bg:"rgba(224,92,0,.15)",   bg2:"rgba(224,92,0,0)",    data:Array.from({length:days},(_,i)=>+rows[i+1]?.ww_flow||0)},
+  ];
   const chartData=mode==="daily"
-    ?{labels:Array.from({length:days},(_,i)=>i+1),datasets:[
-        {...areaDataset("น้ำประปา",Array.from({length:days},(_,i)=>+rows[i+1]?.water||0),brandColor("--brand-500"),"rgba(31,116,186,.2)","rgba(31,116,186,0)")},
-        {...areaDataset("Flowmeter",Array.from({length:days},(_,i)=>+rows[i+1]?.ww_flow||0),brandColor("--teal-500"),"rgba(15,138,114,.16)","rgba(15,138,114,0)")},
-      ]}
+    ?{labels:Array.from({length:days},(_,i)=>i+1),datasets:allDaily.filter(s=>vis[s.key]).map(s=>({...areaDataset(s.label,s.data,s.color,s.bg,s.bg2)}))}
     :{labels:MS,datasets:[{...barDataset("น้ำประปา",[+t.w.toFixed(0)],brandColor("--brand-500"))}]};
 
   return <div>
@@ -212,13 +217,27 @@ function WWDaily({ctx,bldg}){
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",gap:13,marginBottom:18}}>
       <StatCard loading={loading} label="น้ำประปารวม" value={fmt(t.w)} unit="ลบ.ม." icon="droplet" tone="brand"/>
       <StatCard loading={loading} label="น้ำเสียเข้าระบบ" value={fmt(t.waste,1)} unit="ลบ.ม." icon="drop2" tone="teal"/>
+      <StatCard loading={loading} label="น้ำเสีย (Flowmeter)" value={fmt(t.flow,1)} unit="ลบ.ม." icon="drop2" tone="teal"/>
+      <StatCard loading={loading} label="น้ำทิ้ง" value={fmt(t.out,1)} unit="ลบ.ม." icon="drop2" tone="gray"/>
       <StatCard loading={loading} label="ไฟฟ้ารวม" value={fmt(t.e)} unit="kWh" icon="bolt" tone="amber"/>
       <StatCard loading={loading} label="ค่าไฟฟ้ารวม" value={fmt(t.cost,0)} unit="บาท" icon="bolt" tone="amber"/>
       <StatCard loading={loading} label="คลอรีนรวม" value={fmt(t.cl,1)} unit="ลิตร" icon="beaker" tone="teal"/>
     </div>
 
     <div style={{marginBottom:18}}>
-      <ChartCard title="กราฟปริมาณน้ำรายวัน" loading={loading}>
+      <ChartCard title="กราฟปริมาณน้ำรายวัน" loading={loading}
+        right={<div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center"}}>
+          {allDaily.map(s=>(
+            <button key={s.key} onClick={()=>toggleVis(s.key)}
+              style={{display:"flex",alignItems:"center",gap:5,padding:"3px 10px",borderRadius:99,fontSize:12,fontWeight:600,cursor:"pointer",
+                background:vis[s.key]?s.bg:"var(--surface-2)",
+                border:`1.5px solid ${vis[s.key]?s.color:"var(--border)"}`,
+                color:vis[s.key]?s.color:"var(--ink-400)",transition:"all .15s"}}>
+              <span style={{width:8,height:8,borderRadius:"50%",background:vis[s.key]?s.color:"var(--border)",display:"inline-block"}}/>
+              {s.label}
+            </button>
+          ))}
+        </div>}>
         <ChartBox type="line" data={chartData} options={baseOpts()} height={250}/>
       </ChartCard>
     </div>
@@ -230,8 +249,8 @@ function WWDaily({ctx,bldg}){
           <thead>
             <tr>
               <th>วันที่</th>
-              <th>น้ำประปา<small>ลบ.ม.</small></th><th>น้ำเสีย<small>ลบ.ม.</small></th><th>Flowmeter<small>ลบ.ม.</small></th><th>น้ำทิ้ง<small>ลบ.ม.</small></th>
-              <th>ไฟฟ้า<small>kWh</small></th><th>เรท<small>บาท/kWh</small></th><th>ค่าไฟรวม<small>บาท</small></th>
+              <th>น้ำประปา<small>ลบ.ม.</small></th><th>น้ำเสีย<small>ลบ.ม.</small></th><th>น้ำเสีย (Flowmeter)<small>ลบ.ม.</small></th><th>น้ำทิ้ง<small>ลบ.ม.</small></th>
+              <th>การใช้ไฟฟ้า<small>kWh</small></th><th>ค่าไฟต่อหน่วย<small>บาท/kWh</small></th><th>ค่าไฟรวม<small>บาท</small></th>
               <th>คลอรีน<small>ลิตร</small></th><th>ค่าคลอรีน<small>บาท</small></th>
             </tr>
           </thead>
