@@ -123,23 +123,26 @@ function WWAnalysis({ctx,bldg}){
 
     <TableCard title="ประวัติผลตรวจทั้งปี">
       {loading?<div style={{padding:30}}><div className="skel" style={{height:200}}/></div>
-        :<table className="dt">
+        :<div style={{overflowX:"auto"}}><table className="dt">
           <thead><tr>
             <th style={{textAlign:"left",paddingLeft:16}}>เดือน</th>
             <th>วันที่ส่งตรวจ</th>
-            {WW_ANALYSIS_PARAMS.slice(0,9).map(p=><th key={p.id}>{p.label.split("(")[0].trim()}<small>{p.unit||"–"}</small></th>)}
+            {WW_ANALYSIS_PARAMS.map(p=><th key={p.id}>{p.label.split("(")[0].trim()}<small>{p.unit||"–"}</small></th>)}
             <th>เอกสาร</th>
           </tr></thead>
           <tbody>{MN.map((mn,mi)=>{const r=map[`ww_analysis_${bldg}_${y}_${mi}`]||{};
             const has=Object.keys(r).length>0;
-            if(!has) return <tr key={mi} style={{opacity:.4}}><td className="day" style={{textAlign:"left",paddingLeft:16,width:"auto"}}>{mn}</td><td colSpan={11}>ยังไม่มีข้อมูล</td></tr>;
+            if(!has) return <tr key={mi} style={{opacity:.4}}><td className="day" style={{textAlign:"left",paddingLeft:16,width:"auto"}}>{mn}</td><td colSpan={WW_ANALYSIS_PARAMS.length+2}>ยังไม่มีข้อมูล</td></tr>;
             return <tr key={mi}><td className="day" style={{textAlign:"left",paddingLeft:16,width:"auto"}}>{mn}</td>
               <td style={{color:"var(--ink-500)",fontSize:12}}>{r.send_date||"–"}</td>
-              {WW_ANALYSIS_PARAMS.slice(0,9).map(p=>{const v=r[p.id];const s=status(p,v);
-                return <td key={p.id} style={{color:s==="bad"?"var(--bad)":s==="warn"?"var(--warn)":"var(--ink-800)",fontWeight:s?600:400}}>{v??"–"}</td>;})}
+              {WW_ANALYSIS_PARAMS.map(p=>{const v=r[p.id];const s=status(p,v);
+                return <td key={p.id} style={{
+                  color:s==="bad"?"var(--bad)":"var(--ink-800)",
+                  fontWeight:s==="bad"?700:400
+                }}>{v??"–"}</td>;})}
               <td>{r.pdf_link?<a href={r.pdf_link} target="_blank" rel="noopener" style={{color:"var(--brand-600)",fontSize:12,fontWeight:600,textDecoration:"none"}}>PDF</a>:"–"}</td></tr>;})}
           </tbody>
-        </table>}
+        </table></div>}
     </TableCard>
   </div>;
 }
