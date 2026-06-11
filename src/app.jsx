@@ -113,8 +113,10 @@ function Router({ctx}){
   if(p==="ww-sth-daily") return <WWDaily ctx={ctx} bldg="sth"/>;
   if(p==="ww-research-param") return <WWParam ctx={ctx} bldg="research"/>;
   if(p==="ww-sth-param") return <WWParam ctx={ctx} bldg="sth"/>;
-  if(p==="ww-research-summary") return <WWSummary ctx={ctx} bldg="research"/>;
-  if(p==="ww-sth-summary") return <WWSummary ctx={ctx} bldg="sth"/>;
+  if(p==="ww-research-summary-water") return <WWSummaryWater ctx={ctx} bldg="research"/>;
+  if(p==="ww-research-summary-param") return <WWSummaryParam ctx={ctx} bldg="research"/>;
+  if(p==="ww-sth-summary-water")      return <WWSummaryWater ctx={ctx} bldg="sth"/>;
+  if(p==="ww-sth-summary-param")      return <WWSummaryParam ctx={ctx} bldg="sth"/>;
   if(p==="ww-research-analysis") return <WWAnalysis ctx={ctx} bldg="research"/>;
   if(p==="ww-sth-analysis") return <WWAnalysis ctx={ctx} bldg="sth"/>;
   if(p==="water-usage") return <WaterUsage ctx={ctx}/>;
