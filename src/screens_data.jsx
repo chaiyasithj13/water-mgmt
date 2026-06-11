@@ -583,40 +583,149 @@ function ChlorineEnd({ctx}){
   </div>;
 }
 
-// ════════ WW SUMMARY ════════
-function WWSummary({ctx,bldg}){
+// ════════ WW SUMMARY WATER ════════
+function WWSummaryWater({ctx,bldg}){
   const {year:y,setYear}=ctx;
   const title=bldg==="research"?"อาคารวิจัยฯ":"อาคาร สธ.";
   const ids=MN.map((_,mi)=>`ww_${bldg}_${y}_${mi}`);
   const {map,loading}=useFsDocs(ids);
   const months=MN.map((_,mi)=>sumWWFrom(map[`ww_${bldg}_${y}_${mi}`]||{},mi));
+
+  const [vis,setVis]=useState({water:true,waste:true,flow:true});
+  const toggleVis=(k)=>setVis(v=>({...v,[k]:!v[k]}));
+  const series=[
+    {key:"water",label:"น้ำประปา",           color:brandColor("--brand-500"),bg:"rgba(31,116,186,.2)",  bg2:"rgba(31,116,186,0)",  data:months.map(x=>+x.w.toFixed(0))},
+    {key:"waste",label:"น้ำเสีย",             color:brandColor("--teal-500"), bg:"rgba(15,138,114,.18)",bg2:"rgba(15,138,114,0)",  data:months.map(x=>+x.waste.toFixed(1))},
+    {key:"flow", label:"น้ำเสีย (Flowmeter)", color:"#e05c00",                bg:"rgba(224,92,0,.15)",  bg2:"rgba(224,92,0,0)",    data:months.map(x=>+x.flow.toFixed(1))},
+  ];
+  const chartData={labels:MS,datasets:series.filter(s=>vis[s.key]).map(s=>({...areaDataset(s.label,s.data,s.color,s.bg,s.bg2)}))};
+
   return <div>
-    <PageHead title={`สรุปรายเดือน · ${title}`} subtitle={`ภาพรวมทั้งปีงบประมาณ ${y}`}>
+    <PageHead title={`สรุปรายเดือน · ${title}`} subtitle={`ข้อมูลน้ำประปา/น้ำเสีย ปีงบประมาณ ${y}`}>
       <Select value={y} onChange={v=>setYear(+v)} options={[2568,2569,2570].map(v=>({v,l:`ปี ${v}`}))}/>
     </PageHead>
     <div style={{marginBottom:18}}>
-      <ChartCard title="แนวโน้มทั้งปี" loading={loading} right={<Legend items={[{c:"var(--brand-500)",l:"น้ำประปา"},{c:"var(--teal-500)",l:"น้ำเสีย"}]}/>}>
-        <ChartBox type="line" data={{labels:MS,datasets:[
-          {...areaDataset("น้ำประปา",months.map(x=>+x.w.toFixed(0)),brandColor("--brand-500"),"rgba(31,116,186,.2)","rgba(31,116,186,0)")},
-          {...areaDataset("น้ำเสีย",months.map(x=>+x.waste.toFixed(0)),brandColor("--teal-500"),"rgba(15,138,114,.16)","rgba(15,138,114,0)")}]}}
-          options={baseOpts()} height={250}/>
+      <ChartCard title="แนวโน้มทั้งปี" loading={loading}
+        right={<div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+          {series.map(s=>(
+            <button key={s.key} onClick={()=>toggleVis(s.key)}
+              style={{display:"flex",alignItems:"center",gap:5,padding:"3px 10px",borderRadius:99,fontSize:12,fontWeight:600,cursor:"pointer",
+                background:vis[s.key]?s.bg:"var(--surface-2)",
+                border:`1.5px solid ${vis[s.key]?s.color:"var(--border)"}`,
+                color:vis[s.key]?s.color:"var(--ink-400)",transition:"all .15s"}}>
+              <span style={{width:8,height:8,borderRadius:"50%",background:vis[s.key]?s.color:"var(--border)",display:"inline-block"}}/>
+              {s.label}
+            </button>))}
+        </div>}>
+        <ChartBox type="line" data={chartData} options={baseOpts()} height={250}/>
       </ChartCard>
     </div>
     <TableCard title={`ตารางสรุปรายเดือน · ${title}`}>
       {loading
         ? <div style={{padding:30}}><div className="skel" style={{height:340}}/></div>
         : <table className="dt">
-          <thead><tr><th style={{textAlign:"left"}}>เดือน</th><th>น้ำประปา<small>ลบ.ม.</small></th><th>น้ำเสีย<small>ลบ.ม.</small></th><th>Flowmeter<small>ลบ.ม.</small></th><th>น้ำทิ้ง<small>ลบ.ม.</small></th><th>ไฟฟ้า<small>kWh</small></th><th>ค่าไฟ<small>บาท</small></th><th>คลอรีน<small>ลิตร</small></th><th>เฉลี่ยน้ำ/วัน</th></tr></thead>
+          <thead><tr>
+            <th style={{textAlign:"left"}}>เดือน</th>
+            <th>น้ำประปา<small>ลบ.ม.</small></th><th>น้ำเสีย<small>ลบ.ม.</small></th>
+            <th>น้ำเสีย (Flowmeter)<small>ลบ.ม.</small></th><th>น้ำทิ้ง<small>ลบ.ม.</small></th>
+            <th>การใช้ไฟฟ้า<small>kWh</small></th><th>ค่าไฟฟ้า<small>บาท</small></th>
+            <th>คลอรีน<small>ลิตร</small></th><th>ค่าคลอรีน<small>บาท</small></th>
+            <th>เฉลี่ยน้ำ/วัน</th>
+          </tr></thead>
           <tbody>{MN.map((mn,mi)=>{const x=months[mi],e=x.cnt===0;
             return <tr key={mi} style={{opacity:e?.4:1}}>
               <td className="day" style={{textAlign:"left",width:"auto",paddingLeft:16}}>{mn}</td>
               <td>{e?"–":fmt(x.w)}</td><td>{e?"–":fmt(x.waste,1)}</td><td>{e?"–":fmt(x.flow,1)}</td><td>{e?"–":fmt(x.out,1)}</td>
-              <td>{e?"–":fmt(x.e)}</td><td>{e?"–":fmt(x.cost,0)}</td><td>{e?"–":fmt(x.cl,1)}</td>
-              <td className="calc">{e?"–":fmt(x.cnt?x.w/x.cnt:0,1)}</td></tr>;})}</tbody>
+              <td>{e?"–":fmt(x.e)}</td><td>{e?"–":fmt(x.cost,0)}</td>
+              <td>{e?"–":fmt(x.cl,1)}</td><td>{e?"–":fmt(x.clc,0)}</td>
+              <td className="calc">{e?"–":fmt(x.cnt?x.w/x.cnt:0,1)}</td>
+            </tr>;})}</tbody>
         </table>}
     </TableCard>
   </div>;
 }
+
+// ════════ WW SUMMARY PARAM ════════
+function WWSummaryParam({ctx,bldg}){
+  const {year:y,setYear}=ctx;
+  const title=bldg==="research"?"อาคารวิจัยฯ":"อาคาร สธ.";
+  const PARAMS=bldg==="research"?PARAMS_RESEARCH:PARAMS_STH;
+  const [pid,setPid]=useState(PARAMS[0].id);
+  const param=PARAMS.find(p=>p.id===pid)||PARAMS[0];
+  const allTanks=param.tanks.flatMap(g=>g.ids);
+
+  // load all 12 months of param data
+  const ids=MN.map((_,mi)=>`ww_param_${bldg}_${param.id}_${y}_${mi}`);
+  const {map,loading}=useFsDocs(ids);
+
+  // helper: monthly avg per tank
+  const monthAvg=(mi,tankId)=>{
+    const rows=map[`ww_param_${bldg}_${param.id}_${y}_${mi}`]||{};
+    const days=getDays(mi);
+    let s=0,c=0;
+    for(let d=1;d<=days;d++){
+      ["m","a"].forEach(sh=>{const v=+rows[d]?.[tankId]?.[sh];if(!isNaN(v)&&rows[d]?.[tankId]?.[sh]!==""&&rows[d]?.[tankId]?.[sh]!=null){s+=v;c++;}});
+    }
+    return c?+(s/c).toFixed(2):null;
+  };
+
+  const stdExceeded=(v)=>{
+    if(v==null||v==="") return false;
+    const n=+v;if(isNaN(n)) return false;
+    if(param.stdMax!=null&&n>param.stdMax) return true;
+    if(param.stdMin!=null&&n<param.stdMin) return true;
+    return false;
+  };
+
+  return <div>
+    <PageHead title={`สรุปรายเดือน · ${title}`} subtitle={`ข้อมูลตรวจวัดน้ำเสีย ปีงบประมาณ ${y}`}>
+      <Select value={y} onChange={v=>setYear(+v)} options={[2568,2569,2570].map(v=>({v,l:`ปี ${v}`}))}/>
+    </PageHead>
+
+    <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:18}}>
+      {PARAMS.map(p=><button key={p.id} className={"tabchip"+(pid===p.id?" on":"")} onClick={()=>setPid(p.id)}>
+        {p.label}{p.unit?` (${p.unit})`:""}</button>)}
+    </div>
+
+    {param.std!=="—"&&<div style={{marginBottom:12,fontSize:12.5,color:"var(--ink-500)"}}>
+      เกณฑ์: <strong style={{color:"var(--ink-700)"}}>{param.std} {param.unit}</strong>
+      <span style={{marginLeft:12,color:"var(--bad)",fontWeight:600}}>■ สีแดง = เกินเกณฑ์</span>
+    </div>}
+
+    <div style={{overflowX:"auto",marginBottom:18}}>
+      {loading
+        ?<div style={{padding:30}}><div className="skel" style={{height:300}}/></div>
+        :<table className="dt">
+          <thead>
+            <tr>
+              <th style={{textAlign:"left"}}>เดือน</th>
+              {param.tanks.map(g=><th key={g.g} colSpan={g.ids.length}>{g.g}</th>)}
+            </tr>
+            <tr>
+              <th/>
+              {allTanks.map(id=><th key={id}>{id}<small>เฉลี่ย</small></th>)}
+            </tr>
+          </thead>
+          <tbody>{MN.map((mn,mi)=>{
+            const vals=allTanks.map(id=>monthAvg(mi,id));
+            const hasAny=vals.some(v=>v!=null);
+            return <tr key={mi} style={{opacity:hasAny?1:.4}}>
+              <td className="day" style={{textAlign:"left",width:"auto",paddingLeft:16}}>{mn}</td>
+              {vals.map((v,i)=>{
+                const over=stdExceeded(v);
+                return <td key={i} style={{color:over?"var(--bad)":"var(--ink-800)",fontWeight:over?700:400}}>
+                  {v!=null?v:"–"}
+                </td>;
+              })}
+            </tr>;
+          })}</tbody>
+        </table>}
+    </div>
+  </div>;
+}
+
+// keep old WWSummary as alias for backward compat (not used in nav anymore)
+const WWSummary=WWSummaryWater;
 
 // ════════ WATER USAGE STH ════════
 function WaterUsageSth({ctx}){
@@ -700,4 +809,4 @@ function WaterUsageSth({ctx}){
 
 Object.assign(window,{StatCard,ChartCard,TableCard,Legend,EmptyState,EditCell,fmt,
   sumWWFrom,sumWaterFrom,clComplianceFrom,
-  Dashboard,WWDaily,WWParam,WaterUsage,WaterUsageSth,ChlorineStart,ChlorineEnd,WWSummary});
+  Dashboard,WWDaily,WWParam,WaterUsage,WaterUsageSth,ChlorineStart,ChlorineEnd,WWSummary,WWSummaryWater,WWSummaryParam});
