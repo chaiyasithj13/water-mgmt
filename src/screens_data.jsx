@@ -296,8 +296,21 @@ function WWParam({ctx,bldg}){
   const dailyAvg=Array.from({length:days},(_,i)=>{const d=i+1;let s=0,c=0;
     allTanks.forEach(id=>{["m","a"].forEach(sh=>{const v=+rows[d]?.[id]?.[sh];if(!isNaN(v)&&rows[d]?.[id]?.[sh]!==""&&rows[d]?.[id]?.[sh]!=null){s+=v;c++;}});});
     return c?+(s/c).toFixed(2):null;});
+
+  // เส้นประสีแดงแสดงเกณฑ์
+  const stdDatasets=[];
+  if(param.stdMax!=null){
+    const maxLine=Array(days).fill(param.stdMax);
+    stdDatasets.push({label:`เกณฑ์สูงสุด (${param.stdMax})`,data:maxLine,borderColor:"#e53e3e",borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false,tension:0,spanGaps:true});
+  }
+  if(param.stdMin!=null){
+    const minLine=Array(days).fill(param.stdMin);
+    stdDatasets.push({label:`เกณฑ์ต่ำสุด (${param.stdMin})`,data:minLine,borderColor:"#e53e3e",borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false,tension:0,spanGaps:true});
+  }
+
   const chartData={labels:Array.from({length:days},(_,i)=>i+1),datasets:[
-    {...areaDataset(param.label,dailyAvg,brandColor("--brand-500"),"rgba(31,116,186,.2)","rgba(31,116,186,0)"),spanGaps:true}]};
+    {...areaDataset(param.label,dailyAvg,brandColor("--brand-500"),"rgba(31,116,186,.2)","rgba(31,116,186,0)"),spanGaps:true},
+    ...stdDatasets]};
 
   return <div>
     <PageHead title={`พารามิเตอร์น้ำเสีย · ${title}`} subtitle={`${MN[m]} ${y} · ค่าตรวจวัดเช้า/บ่ายแยกตามถัง`}>
