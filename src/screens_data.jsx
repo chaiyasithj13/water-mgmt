@@ -462,7 +462,7 @@ function ChlorineStart({ctx}){
       {loading
         ? <div style={{padding:30}}><div className="skel" style={{height:300}}/></div>
         : <table className="dt" key={docId}>
-          <thead><tr><th>วันที่</th><th>เวลา</th><th>คลอรีนอิสระ<small>มก./ล</small></th><th>TDS<small>มก./ล</small></th><th>pH</th><th>สถานะ</th><th style={{minWidth:140}}>หมายเหตุ</th><th style={{minWidth:110}}>ผู้ตรวจ</th></tr></thead>
+          <thead><tr><th>วันที่</th><th>เวลา</th><th>คลอรีนอิสระ<small>มก./ล</small></th><th>TDS<small>มก./ล</small></th><th>pH</th><th>สถานะ</th><th>หมายเหตุ</th><th>ผู้ตรวจ</th></tr></thead>
           <tbody>
             {Array.from({length:days},(_,i)=>i+1).map(d=>{const r=rows[d]||{};const cl=+r.free_chlorine;const ok=!isNaN(cl)&&cl>=0.2;const has=!isNaN(cl)&&r.free_chlorine!==""&&r.free_chlorine!=null;
               return <tr key={d}><td className="day">{d}</td>
@@ -470,9 +470,11 @@ function ChlorineStart({ctx}){
                 <td><EditCell rows={rows} d={d} field="free_chlorine" admin={admin} mutate={mutate} w={64}/></td>
                 <td><EditCell rows={rows} d={d} field="tds" admin={admin} mutate={mutate} w={64}/></td>
                 <td><EditCell rows={rows} d={d} field="ph" admin={admin} mutate={mutate} w={52}/></td>
-                <td>{has?<Tag tone={ok?"ok":"bad"}><Dot tone={ok?"ok":"bad"}/>{ok?"ผ่าน":"ต่ำ"}</Tag>:"–"}</td>
-                <td style={{textAlign:"left"}}><EditCell rows={rows} d={d} field="note" admin={admin} mutate={mutate} type="text" w={130}/></td>
-                <td>{admin
+                <td>{has
+                  ?<span style={{fontWeight:700,color:ok?"var(--ok)":"var(--bad)"}}>{ok?"ผ่าน":"ไม่ผ่าน"}</span>
+                  :"–"}</td>
+                <td style={{textAlign:"left",minWidth:140}}><EditCell rows={rows} d={d} field="note" admin={admin} mutate={mutate} type="text" w={130}/></td>
+                <td style={{minWidth:110}}>{admin
                   ?<select className="ti" value={r.inspector||""} style={{width:100}} onChange={e=>mutate(rw=>{if(!rw[d])rw[d]={};rw[d].inspector=e.target.value;})}>
                     <option value=""></option>
                     {["ธรรมนูญ","วีระยุทธ","สิทธิชัย","ณัฐพัฒน์"].map(n=><option key={n} value={n}>{n}</option>)}
@@ -532,7 +534,9 @@ function ChlorineEnd({ctx}){
                   <td>{admin?<input className="ti" type="number" step="any" defaultValue={r.free_chlorine??""} key={`${wk}-${sp}-cl-${wd.date||""}`} style={{width:64}} onChange={e=>updateRow(wk,sp,"free_chlorine",e.target.value===""?"":+e.target.value)}/>:<span>{r.free_chlorine??"–"}</span>}</td>
                   <td>{admin?<input className="ti" type="number" step="any" defaultValue={r.tds??""} key={`${wk}-${sp}-tds-${wd.date||""}`} style={{width:64}} onChange={e=>updateRow(wk,sp,"tds",e.target.value===""?"":+e.target.value)}/>:<span>{r.tds??"–"}</span>}</td>
                   <td>{admin?<input className="ti" type="number" step="any" defaultValue={r.ph??""} key={`${wk}-${sp}-ph-${wd.date||""}`} style={{width:52}} onChange={e=>updateRow(wk,sp,"ph",e.target.value===""?"":+e.target.value)}/>:<span>{r.ph??"–"}</span>}</td>
-                  <td>{has?<Tag tone={ok?"ok":"bad"}><Dot tone={ok?"ok":"bad"}/>{ok?"ผ่าน":"ต่ำ"}</Tag>:"–"}</td>
+                  <td>{has
+                    ?<span style={{fontWeight:700,color:ok?"var(--ok)":"var(--bad)"}}>{ok?"ผ่าน":"ไม่ผ่าน"}</span>
+                    :"–"}</td>
                   <td>{admin
                     ?<select className="ti" value={r.inspector||""} key={`${wk}-${sp}-i-${wd.date||""}`} style={{width:100}} onChange={e=>updateRow(wk,sp,"inspector",e.target.value)}>
                       <option value=""></option>
