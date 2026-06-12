@@ -91,19 +91,13 @@ const NAV = [
     {id:"ww-research-daily",   label:"รายงานประจำวัน",   icon:"file"},
     {id:"ww-research-param",   label:"พารามิเตอร์น้ำเสีย", icon:"sliders"},
     {id:"ww-research-analysis",label:"ผลวิเคราะห์น้ำ",    icon:"flask"},
-    {type:"group", label:"สรุปรายเดือน", items:[
-      {id:"ww-research-summary-water", label:"ข้อมูลน้ำประปา/น้ำเสีย", icon:"chart"},
-      {id:"ww-research-summary-param", label:"ข้อมูลตรวจวัดน้ำเสีย",    icon:"chart"},
-    ]},
+    {type:"item", id:"ww-research-summary", label:"สรุปรายเดือน", icon:"chart"},
   ]},
   {type:"group", label:"อาคารรัตนชีวรักษ์ (สธ.)", items:[
     {id:"ww-sth-daily",   label:"รายงานประจำวัน",   icon:"file"},
     {id:"ww-sth-param",   label:"พารามิเตอร์น้ำเสีย", icon:"sliders"},
     {id:"ww-sth-analysis",label:"ผลวิเคราะห์น้ำ",    icon:"flask"},
-    {type:"group", label:"สรุปรายเดือน", items:[
-      {id:"ww-sth-summary-water", label:"ข้อมูลน้ำประปา/น้ำเสีย", icon:"chart"},
-      {id:"ww-sth-summary-param", label:"ข้อมูลตรวจวัดน้ำเสีย",    icon:"chart"},
-    ]},
+    {type:"item", id:"ww-sth-summary", label:"สรุปรายเดือน", icon:"chart"},
   ]},
   {type:"section", label:"ระบบประปา"},
   {type:"group", label:"ปริมาณการใช้น้ำ", items:[
@@ -125,8 +119,10 @@ const PAGE_META = {
   "ww-research-daily":{title:"รายงานประจำวัน", crumb:["ระบบบำบัดน้ำเสีย","อาคารวิจัยฯ"]},
   "ww-research-param":{title:"พารามิเตอร์น้ำเสีย", crumb:["ระบบบำบัดน้ำเสีย","อาคารวิจัยฯ"]},
   "ww-research-analysis":{title:"ผลวิเคราะห์น้ำเสีย", crumb:["ระบบบำบัดน้ำเสีย","อาคารวิจัยฯ"]},
+  "ww-research-summary":{title:"สรุปรายเดือน", crumb:["ระบบบำบัดน้ำเสีย","อาคารวิจัยฯ"]},
   "ww-research-summary-water":{title:"สรุปรายเดือน — น้ำประปา/น้ำเสีย", crumb:["ระบบบำบัดน้ำเสีย","อาคารวิจัยฯ","สรุปรายเดือน"]},
   "ww-research-summary-param":{title:"สรุปรายเดือน — ตรวจวัดน้ำเสีย",    crumb:["ระบบบำบัดน้ำเสีย","อาคารวิจัยฯ","สรุปรายเดือน"]},
+  "ww-sth-summary":{title:"สรุปรายเดือน", crumb:["ระบบบำบัดน้ำเสีย","อาคาร สธ."]},
   "ww-sth-summary-water":{title:"สรุปรายเดือน — น้ำประปา/น้ำเสีย",       crumb:["ระบบบำบัดน้ำเสีย","อาคาร สธ.","สรุปรายเดือน"]},
   "ww-sth-summary-param":{title:"สรุปรายเดือน — ตรวจวัดน้ำเสีย",         crumb:["ระบบบำบัดน้ำเสีย","อาคาร สธ.","สรุปรายเดือน"]},
   "ww-sth-daily":{title:"รายงานประจำวัน", crumb:["ระบบบำบัดน้ำเสีย","อาคาร สธ."]},
