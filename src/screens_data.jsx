@@ -653,9 +653,9 @@ function WWSummaryWater({ctx,bldg}){
   const chartData={labels:MS,datasets:series.filter(s=>vis[s.key]).map(s=>({...areaDataset(s.label,s.data,s.color,s.bg,s.bg2)}))};
 
   return <div>
-    <PageHead title={`สรุปรายเดือน · ${title}`} subtitle={`ข้อมูลน้ำประปา/น้ำเสีย ปีงบประมาณ ${y}`}>
+    <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
       <Select value={y} onChange={v=>setYear(+v)} options={[2568,2569,2570].map(v=>({v,l:`ปี ${v}`}))}/>
-    </PageHead>
+    </div>
     <div style={{marginBottom:18}}>
       <ChartCard title="แนวโน้มทั้งปี" loading={loading}
         right={<div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
@@ -730,9 +730,9 @@ function WWSummaryParam({ctx,bldg}){
   };
 
   return <div>
-    <PageHead title={`สรุปรายเดือน · ${title}`} subtitle={`ข้อมูลตรวจวัดน้ำเสีย ปีงบประมาณ ${y}`}>
+    <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
       <Select value={y} onChange={v=>setYear(+v)} options={[2568,2569,2570].map(v=>({v,l:`ปี ${v}`}))}/>
-    </PageHead>
+    </div>
 
     <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:18}}>
       {PARAMS.map(p=><button key={p.id} className={"tabchip"+(pid===p.id?" on":"")} onClick={()=>setPid(p.id)}>
@@ -776,8 +776,26 @@ function WWSummaryParam({ctx,bldg}){
   </div>;
 }
 
-// keep old WWSummary as alias for backward compat (not used in nav anymore)
-const WWSummary=WWSummaryWater;
+// ════════ WW SUMMARY (with internal tabs) ════════
+function WWSummary({ctx,bldg}){
+  const [tab,setTab]=useState("water"); // "water" | "param"
+  const title=bldg==="research"?"อาคารวิจัยฯ":"อาคาร สธ.";
+  return <div>
+    <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"2px solid var(--border)"}}>
+      {[["water","ข้อมูลน้ำประปา/น้ำเสีย"],["param","ข้อมูลตรวจวัดน้ำเสีย"]].map(([v,l])=>(
+        <button key={v} onClick={()=>setTab(v)}
+          style={{padding:"10px 20px",fontSize:13.5,fontWeight:600,cursor:"pointer",border:"none",
+            background:"transparent",fontFamily:"var(--font)",
+            color:tab===v?"var(--brand-600)":"var(--ink-500)",
+            borderBottom:tab===v?"2px solid var(--brand-500)":"2px solid transparent",
+            marginBottom:"-2px",transition:"all .15s"}}>
+          {l}
+        </button>
+      ))}
+    </div>
+    {tab==="water"?<WWSummaryWater ctx={ctx} bldg={bldg}/>:<WWSummaryParam ctx={ctx} bldg={bldg}/>}
+  </div>;
+}
 
 // ════════ WATER USAGE STH ════════
 function WaterUsageSth({ctx}){
